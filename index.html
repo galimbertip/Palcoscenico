@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0608">
+<meta name="mobile-web-app-capable" content="true">
+<meta name="apple-mobile-web-app-capable" content="true">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Palcoscenico — Lettore Teatrale</title>
+<link rel="manifest" href="manifest.json">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, getDoc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBehq5OU8E784W4smVWUGZRI79zstis6Hs",
+  authDomain: "palcoscenico-94f83.firebaseapp.com",
+  projectId: "palcoscenico-94f83",
+  storageBucket: "palcoscenico-94f83.firebasestorage.app",
+  messagingSenderId: "136170432462",
+  appId: "1:136170432462:web:5f1673f418c76ac56c2d9f"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Expose to global scope
+window._db = db;
+window._fbDoc = (id) => doc(db, 'palcoscenico', id);
+window._getDoc = getDoc;
+window._setDoc = setDoc;
+window._onSnapshot = onSnapshot;
+window._firebaseReady = true;
+window.dispatchEvent(new Event('firebase-ready'));
+</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,600&family=Cormorant+Garamond:ital,wght@0,300;0,500;1,300;1,500&family=IM+Fell+English:ital@0;1&display=swap');
+:root {
+  --bg:#0a0608; --bg2:#130d10; --bg3:#1c1217;
+  --gold:#c9a84c; --gold2:#e8c97a;
+  --crimson:#8b1a2e; --crimson2:#b52240;
+  --cream:#f0e6d3; --cream2:#d4c4a8; --muted:#6b5a52;
+  --green:#5a9e6f; --border:rgba(201,168,76,0.2);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--cream);font-family:'Cormorant Garamond',serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(90deg,transparent 0px,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);pointer-events:none;z-index:0;}
+.screen{display:none;position:relative;z-index:1;min-height:100vh;}
+.screen.active{display:flex;flex-direction:column;}
+header{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0;}
+.logo{font-family:'Playfair Display',serif;font-size:1.4rem;font-style:italic;color:var(--gold);}
+.logo span{color:var(--cream2);font-style:normal;font-weight:400;font-size:0.75em;}
+.header-btn{background:none;border:1px solid var(--border);color:var(--cream2);padding:7px 13px;border-radius:4px;font-family:'Cormorant Garamond',serif;font-size:0.95rem;cursor:pointer;transition:all 0.2s;}
+.header-btn:hover{border-color:var(--gold);color:var(--gold);}
+
+/* HOME */
+#screen-home{justify-content:center;align-items:center;padding:40px 20px;}
+.curtain-divider{width:60px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:20px auto;}
+.home-title{font-family:'Playfair Display',serif;font-size:clamp(2rem,8vw,3.2rem);font-style:italic;color:var(--gold);line-height:1.1;text-align:center;text-shadow:0 2px 20px rgba(201,168,76,0.3);}
+.home-sub{font-family:'IM Fell English',serif;font-size:1rem;color:var(--cream2);font-style:italic;margin-top:6px;opacity:0.8;text-align:center;}
+.upload-zone{margin:28px auto 0;width:100%;max-width:400px;border:1px dashed var(--gold);border-radius:8px;padding:36px 24px;background:rgba(201,168,76,0.03);cursor:pointer;transition:all 0.3s;position:relative;text-align:center;}
+.upload-zone:hover,.upload-zone.drag-over{background:rgba(201,168,76,0.08);border-color:var(--gold2);transform:translateY(-2px);}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-icon{font-size:2.2rem;margin-bottom:10px;}
+.upload-label{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--gold);display:block;margin-bottom:5px;}
+.upload-hint{font-size:0.82rem;color:var(--muted);font-style:italic;}
+.demo-btn{margin-top:16px;background:none;border:none;color:var(--muted);font-family:'Cormorant Garamond',serif;font-size:0.9rem;font-style:italic;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+.demo-btn:hover{color:var(--cream2);}
+
+/* SYNC STATUS */
+.sync-bar{display:flex;align-items:center;gap:8px;margin:14px auto 0;max-width:400px;width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:0.84rem;color:var(--cream2);}
+.sync-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.sync-dot.ok{background:var(--green);}
+.sync-dot.loading{background:var(--gold);animation:pulse 1s infinite;}
+.sync-dot.err{background:var(--crimson2);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+.tip-box{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:13px 15px;margin-top:14px;font-size:0.84rem;color:var(--cream2);line-height:1.6;max-width:400px;width:100%;}
+.tip-box strong{color:var(--gold);display:block;margin-bottom:4px;font-family:'Playfair Display',serif;font-style:italic;}
+
+/* SETTINGS */
+#screen-settings{padding:0 0 40px;}
+.settings-body{padding:20px;flex:1;overflow-y:auto;}
+.section-title{font-family:'Playfair Display',serif;font-size:1.1rem;font-style:italic;color:var(--gold);margin-bottom:13px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.section-subtitle{font-size:0.8rem;color:var(--muted);font-style:italic;margin-top:-8px;margin-bottom:13px;}
+.field-group{margin-bottom:22px;}
+.field-label{display:block;font-size:0.78rem;color:var(--cream2);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:7px;}
+select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--cream);padding:9px 30px 9px 11px;font-family:'Cormorant Garamond',serif;font-size:0.93rem;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23c9a84c'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;}
+select:focus{outline:none;border-color:var(--gold);}
+
+/* ROLE CARDS */
+.role-list{display:flex;flex-direction:column;gap:12px;}
+.role-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;}
+.role-card.my-char-card{border-color:var(--crimson);background:rgba(139,26,46,0.06);}
+.role-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.role-name-display{font-family:'Playfair Display',serif;font-style:italic;font-size:1.05rem;}
+.my-char-badge{font-size:0.68rem;color:var(--crimson2);background:rgba(139,26,46,0.2);border:1px solid rgba(139,26,46,0.3);padding:2px 7px;border-radius:10px;}
+.preview-btn{flex-shrink:0;background:none;border:1px solid var(--border);color:var(--cream2);width:33px;height:33px;border-radius:4px;cursor:pointer;font-size:0.95rem;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
+.preview-btn:hover{border-color:var(--gold);color:var(--gold);}
+.preview-btn.playing{border-color:var(--crimson2);color:var(--crimson2);animation:pulse 1s infinite;}
+
+/* VOICE PICKER */
+.picker-label{font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;}
+.pill-group{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
+.pill{background:var(--bg2);border:1px solid var(--border);color:var(--cream2);padding:5px 12px;border-radius:20px;font-family:'Cormorant Garamond',serif;font-size:0.85rem;cursor:pointer;transition:all 0.18s;white-space:nowrap;}
+.pill:hover{border-color:var(--gold);color:var(--gold);}
+.pill.active{background:rgba(201,168,76,0.15);border-color:var(--gold);color:var(--gold2);}
+.pill.f.active{background:rgba(180,100,140,0.15);border-color:#c878a8;color:#e0a0c8;}
+.pill.f{border-color:rgba(180,100,140,0.3);}
+.pill.f:hover{border-color:#c878a8;color:#e0a0c8;}
+.voice-result{margin-top:8px;padding:8px 12px;background:var(--bg2);border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.voice-result-name{font-family:'Playfair Display',serif;font-style:italic;font-size:0.9rem;color:var(--gold2);}
+.voice-result-desc{font-size:0.75rem;color:var(--muted);}
+
+/* SAVE SHARED BTN */
+.btn-save-shared{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;background:rgba(90,158,111,0.15);border:1px solid rgba(90,158,111,0.4);border-radius:6px;color:#8ecfa8;font-family:'Playfair Display',serif;font-size:0.95rem;font-style:italic;cursor:pointer;transition:all 0.2s;margin-top:16px;}
+.btn-save-shared:hover{background:rgba(90,158,111,0.25);}
+.btn-save-shared.saving{opacity:0.6;pointer-events:none;}
+
+/* TOGGLE */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid rgba(201,168,76,0.07);}
+.toggle-label{font-size:0.92rem;color:var(--cream2);}
+.toggle-desc{font-size:0.77rem;color:var(--muted);font-style:italic;margin-top:2px;}
+.toggle{position:relative;width:46px;height:25px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:var(--bg2);border:1px solid var(--border);border-radius:25px;transition:0.3s;cursor:pointer;}
+.toggle-slider::before{content:'';position:absolute;width:17px;height:17px;border-radius:50%;background:var(--muted);top:3px;left:3px;transition:0.3s;}
+.toggle input:checked+.toggle-slider{background:rgba(201,168,76,0.15);border-color:var(--gold);}
+.toggle input:checked+.toggle-slider::before{background:var(--gold);transform:translateX(21px);}
+
+.btn-primary{display:block;width:100%;padding:14px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--bg);border:none;border-radius:6px;font-family:'Playfair Display',serif;font-size:1.05rem;font-style:italic;cursor:pointer;transition:all 0.2s;margin-top:8px;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(201,168,76,0.3);}
+.btn-secondary{display:block;width:100%;padding:11px;background:none;color:var(--cream2);border:1px solid var(--border);border-radius:6px;font-family:'Cormorant Garamond',serif;font-size:0.97rem;cursor:pointer;transition:all 0.2s;margin-top:8px;}
+.btn-secondary:hover{border-color:var(--gold);color:var(--gold);}
+
+/* PLAYER */
+#screen-player{padding:0;}
+.player-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.play-title{font-family:'Playfair Display',serif;font-size:1.05rem;font-style:italic;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%;}
+.script-container{flex:1;overflow-y:auto;padding:18px;padding-bottom:220px;scroll-behavior:smooth;}
+.line-block{margin-bottom:3px;padding:10px 13px;border-radius:6px;border-left:3px solid transparent;transition:all 0.3s;cursor:pointer;}
+.line-block:hover{background:rgba(255,255,255,0.02);}
+.line-block.active{background:rgba(201,168,76,0.07);border-left-color:var(--gold);}
+.line-block.past{opacity:0.38;}
+.line-block.my-line{border-left-color:var(--crimson);}
+.line-block.my-line.active{background:rgba(139,26,46,0.1);}
+.line-block.skipped{opacity:0.28;}
+.line-speaker{font-family:'Playfair Display',serif;font-size:0.74rem;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px;}
+.line-text{font-family:'IM Fell English',serif;font-size:1.02rem;line-height:1.7;color:var(--cream);}
+.line-text.stage-direction{font-style:italic;color:var(--muted);font-family:'Cormorant Garamond',serif;font-size:0.91rem;}
+.skip-badge{display:inline-block;font-size:0.67rem;background:rgba(139,26,46,0.25);color:var(--crimson2);border-radius:3px;padding:1px 5px;margin-left:7px;font-style:normal;font-family:'Cormorant Garamond',serif;}
+.player-controls{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(to top,var(--bg) 75%,transparent);padding:14px 20px 26px;z-index:10;}
+.progress-bar-wrap{height:2px;background:rgba(201,168,76,0.12);border-radius:2px;margin-bottom:13px;cursor:pointer;}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:2px;transition:width 0.3s;pointer-events:none;}
+.controls-row-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.current-speaker{font-family:'Playfair Display',serif;font-style:italic;font-size:0.87rem;color:var(--gold2);max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.speed-control{display:flex;align-items:center;gap:8px;}
+.speed-btn{background:none;border:1px solid var(--border);color:var(--cream2);width:26px;height:26px;border-radius:4px;cursor:pointer;font-size:0.95rem;display:flex;align-items:center;justify-content:center;}
+.speed-btn:hover{border-color:var(--gold);color:var(--gold);}
+.speed-val{font-size:0.81rem;color:var(--cream2);min-width:30px;text-align:center;}
+.controls-main{display:flex;align-items:center;justify-content:center;gap:18px;}
+.ctrl-btn{background:none;border:none;cursor:pointer;color:var(--cream2);font-size:1.5rem;padding:8px;transition:all 0.15s;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.ctrl-btn:hover{color:var(--gold);transform:scale(1.1);}
+.ctrl-btn:active{transform:scale(0.95);}
+.ctrl-btn-play{width:60px;height:60px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--bg)!important;font-size:1.5rem;border-radius:50%;box-shadow:0 4px 20px rgba(201,168,76,0.35);}
+.ctrl-btn-play:hover{transform:scale(1.05)!important;}
+.buffering-ring{width:18px;height:18px;border:2px solid rgba(201,168,76,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;display:none;margin-left:8px;}
+.buffering-ring.active{display:block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+#toast{position:fixed;bottom:175px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border);color:var(--cream2);padding:9px 18px;border-radius:20px;font-size:0.87rem;font-style:italic;z-index:100;opacity:0;pointer-events:none;transition:opacity 0.3s;white-space:nowrap;max-width:90%;}
+#toast.show{opacity:1;}
+.loading-overlay{position:fixed;inset:0;background:rgba(10,6,8,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:18px;}
+.loading-overlay.hidden{display:none;}
+.loading-spinner{width:44px;height:44px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite;}
+.loading-text{font-style:italic;color:var(--cream2);font-size:0.95rem;}
+.color-swatch{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle;}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay hidden" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loadingText">Lettura del copione…</div>
+</div>
+<div id="toast"></div>
+
+<!-- HOME -->
+<div class="screen active" id="screen-home">
+  <header>
+    <div class="logo">Palcoscenico <span>Lettore Teatrale</span></div>
+    <button class="header-btn" onclick="goSettings()">⚙ Impostazioni</button>
+  </header>
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 20px;">
+    <div class="home-title">Il tuo copione,<br>in scena.</div>
+    <div class="home-sub">Carica lo script. Ascolta ogni voce.</div>
+    <div class="curtain-divider"></div>
+
+    <div class="upload-zone" id="dropZone">
+      <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt" onchange="handleFile(this.files[0])">
+      <div class="upload-icon">📜</div>
+      <span class="upload-label">Carica il copione</span>
+      <div class="upload-hint">PDF · Word (.docx) · Testo semplice</div>
+    </div>
+    <button class="demo-btn" onclick="loadDemo()">→ Carica script di esempio</button>
+
+    <!-- SYNC STATUS -->
+    <div class="sync-bar">
+      <div class="sync-dot loading" id="syncDot"></div>
+      <span id="syncLabel">Connessione al database…</span>
+    </div>
+
+    <div class="tip-box">
+      <strong>🎭 Formato consigliato</strong>
+      <span style="color:var(--gold2)">NOME:</span> battuta di dialogo<br>
+      <span style="color:var(--gold2)">[Indicazione di scena]</span> o <em>(azione)</em>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="screen" id="screen-settings">
+  <header>
+    <div class="logo">Impostazioni</div>
+    <button class="header-btn" onclick="goBack()">← Indietro</button>
+  </header>
+  <div class="settings-body">
+
+    <!-- MIO PERSONAGGIO — locale -->
+    <div class="field-group">
+      <div class="section-title">Il mio personaggio</div>
+      <div class="section-subtitle">💾 Salvato solo su questo dispositivo</div>
+      <label class="field-label">Chi interpreti?</label>
+      <select id="myCharSelect" onchange="updateMyChar()">
+        <option value="">— Nessuno (spettatore) —</option>
+      </select>
+    </div>
+    <div id="myCharOptions" style="display:none;margin-bottom:20px;">
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Leggi le mie battute</div>
+          <div class="toggle-desc">Se disattivato le tue battute vengono saltate</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="readMyLines" checked><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+
+    <!-- LETTURA -->
+    <div class="field-group">
+      <div class="section-title">Voce & lettura</div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Leggi indicazioni di scena</div>
+          <div class="toggle-desc">Azioni tra [parentesi] o (parentesi)</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="readStageDirections" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div style="height:14px;"></div>
+      <label class="field-label">Voce narratore / indicazioni di scena</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <select id="stageVoiceSelect" style="flex:1;"></select>
+        <button class="preview-btn" id="previewStageBtn" onclick="previewStageVoice()" title="Anteprima">▶</button>
+      </div>
+    </div>
+
+    <!-- VOCI PERSONAGGI — condivise -->
+    <div class="field-group">
+      <div class="section-title">Voci personaggi</div>
+      <div class="section-subtitle">☁️ Condivise con tutto il gruppo — salvate online</div>
+      <div id="roleVoiceList" class="role-list">
+        <div style="color:var(--muted);font-style:italic;font-size:0.88rem;">Carica prima un copione.</div>
+      </div>
+
+      <!-- SALVA CONDIVISO -->
+      <button class="btn-save-shared" id="saveSharedBtn" onclick="saveSharedVoices()" style="display:none;">
+        <span id="saveSharedIcon">☁️</span>
+        <span id="saveSharedLabel">Salva voci per tutto il gruppo</span>
+      </button>
+    </div>
+
+    <button class="btn-primary" onclick="saveAndPlay()">✦ Inizia la lettura</button>
+    <button class="btn-secondary" onclick="goBack()">Annulla</button>
+  </div>
+</div>
+
+<!-- PLAYER -->
+<div class="screen" id="screen-player">
+  <div class="player-header">
+    <div class="play-title" id="playerTitle">Copione</div>
+    <div style="display:flex;gap:8px;">
+      <button class="header-btn" onclick="goSettings()">⚙</button>
+      <button class="header-btn" onclick="goHome()">✕</button>
+    </div>
+  </div>
+  <div class="script-container" id="scriptContainer"></div>
+  <div class="player-controls">
+    <div class="progress-bar-wrap" onclick="handleProgressClick(event)">
+      <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+    </div>
+    <div class="controls-row-top">
+      <div style="display:flex;align-items:center;">
+        <div class="current-speaker" id="currentSpeakerLabel">—</div>
+        <div class="buffering-ring" id="bufferingRing"></div>
+      </div>
+      <div class="speed-control">
+        <button class="speed-btn" onclick="changeSpeed(-0.1)">−</button>
+        <span class="speed-val" id="speedLabel">1.0×</span>
+        <button class="speed-btn" onclick="changeSpeed(+0.1)">+</button>
+      </div>
+    </div>
+    <div class="controls-main">
+      <button class="ctrl-btn" onclick="prevLine()">⏮</button>
+      <button class="ctrl-btn" onclick="skipBack()">⏪</button>
+      <button class="ctrl-btn ctrl-btn-play" id="playBtn" onclick="togglePlay()">▶</button>
+      <button class="ctrl-btn" onclick="skipFwd()">⏩</button>
+      <button class="ctrl-btn" onclick="nextLine()">⏭</button>
+    </div>
+  </div>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const API_KEY='95cd8576fd89ad9a3c1a090931eaa3cb91ef4c82d79f80b16c2ca3969474763f';
+const EL_MODEL='eleven_multilingual_v2';
+const SHARED_DOC_ID='shared-voices';
+
+const VOICES=[
+  {id:'pNInz6obpgDQGcFmaJgB',name:'Adam',    g:'M',age:'adulto', tone:'grave',style:['autorevole','serio']},
+  {id:'nPczCjzI2devNBz1zQrb',name:'Brian',   g:'M',age:'adulto', tone:'medio',style:['naturale','neutro']},
+  {id:'N2lVS1w4EtoT3dr4eOWO',name:'Callum',  g:'M',age:'giovane',tone:'medio',style:['intenso','drammatico']},
+  {id:'IKne3meq5aSn9XLyUdCD',name:'Charlie', g:'M',age:'giovane',tone:'medio',style:['colloquiale','vivace']},
+  {id:'iP95p4xoKVk53GoZ742B',name:'Chris',   g:'M',age:'adulto', tone:'medio',style:['casual','amichevole']},
+  {id:'onwK4e9ZLuTAKqWW03F9',name:'Daniel',  g:'M',age:'adulto', tone:'medio',style:['elegante','formale']},
+  {id:'cjVigY5qzO86Huf0OWal',name:'Eric',    g:'M',age:'adulto', tone:'medio',style:['amichevole','caldo']},
+  {id:'JBFqnCBsd6RMkjVDRZzb',name:'George',  g:'M',age:'anziano',tone:'grave',style:['autorevole','maturo']},
+  {id:'TX3LPaxmHKxFdv7VOQHJ',name:'Liam',    g:'M',age:'giovane',tone:'medio',style:['articolato','preciso']},
+  {id:'flq6f7yk4E4fJM5XTYuZ',name:'Michael', g:'M',age:'anziano',tone:'grave',style:['saggio','profondo']},
+  {id:'pqHfZKP75CvOlQylNhV4',name:'Bill',    g:'M',age:'anziano',tone:'grave',style:['autorevole','rustico']},
+  {id:'bIHbv24MWmeRgasZH58o',name:'Will',    g:'M',age:'giovane',tone:'medio',style:['amichevole','leggero']},
+  {id:'VR6AewLTigWG4xSOukaG',name:'Arnold',  g:'M',age:'adulto', tone:'grave',style:['deciso','forte']},
+  {id:'ErXwobaYiN019PkySvjV',name:'Antoni',  g:'M',age:'adulto', tone:'medio',style:['caldo','narrativo']},
+  {id:'XB0fDUnXU5powFXDhCwa',name:'Charlotte',g:'F',age:'adulta', tone:'medio',style:['elegante','sofisticata']},
+  {id:'cgSgspJ2msm6clMCkdW9',name:'Jessica', g:'F',age:'giovane',tone:'acuto',style:['espressiva','vivace']},
+  {id:'Xb7hH8MSUJpSbSDYk0k2',name:'Alice',   g:'F',age:'adulta', tone:'medio',style:['fiduciosa','decisa']},
+  {id:'9BWtsMINqrJLrRacOk9x',name:'Aria',    g:'F',age:'adulta', tone:'medio',style:['positiva','naturale']},
+  {id:'EXAVITQu4vr4xnSDxMaL',name:'Sarah',   g:'F',age:'adulta', tone:'medio',style:['morbida','calma']},
+  {id:'FGY2WhTYpPnrIDTdsKH5',name:'Laura',   g:'F',age:'giovane',tone:'acuto',style:['entusiasta','allegra']},
+  {id:'z9fAnlkpzviPz146aGWa',name:'Glinda',  g:'F',age:'adulta', tone:'acuto',style:['dolce','delicata']},
+  {id:'oWAxZDx7w5VEj9dCyTzz',name:'Grace',   g:'F',age:'anziana',tone:'medio',style:['calma','saggia']},
+  {id:'ThT5KcBeYPX3keUQqHPh',name:'Dorothy', g:'F',age:'giovane',tone:'medio',style:['giovane','fragile']},
+];
+
+const ROLE_COLORS=['#c9a84c','#8b9fd4','#6dbf9e','#d4826d','#b58fd4','#d4c26d','#6db5d4','#d46d9e'];
+const STAGE_VOICE_ID=VOICES.find(v=>v.name==='Aria').id;
+
+let lines=[],roles=[],roleColors={};
+let roleVoiceId={};
+let roleFilters={};
+let stageVoiceId=STAGE_VOICE_ID;
+let myChar='',readMyLines=true,readStageDirections=true;
+let speechRate=1.0;
+let currentLine=0,isPlaying=false;
+let fileName='Copione';
+let currentAudio=null;
+let activePreviewBtn=null;
+let fbReady=false;
+let unsubscribeSnapshot=null;
+
+/* ══ FIREBASE ══ */
+function setSyncStatus(state, label){
+  const dot=document.getElementById('syncDot');
+  const lbl=document.getElementById('syncLabel');
+  dot.className='sync-dot '+state;
+  lbl.textContent=label;
+}
+
+function initFirebase(){
+  if(!window._firebaseReady){
+    window.addEventListener('firebase-ready',()=>initFirebase());
+    return;
+  }
+  fbReady=true;
+  setSyncStatus('ok','☁️ Database connesso — voci sincronizzate');
+  // Listen for realtime changes from other users
+  if(unsubscribeSnapshot) unsubscribeSnapshot();
+  unsubscribeSnapshot=window._onSnapshot(
+    window._fbDoc(SHARED_DOC_ID),
+    (snap)=>{
+      if(snap.exists()){
+        const data=snap.data();
+        // Only update if we're not the ones who just saved
+        if(data.roleVoiceId) Object.assign(roleVoiceId, data.roleVoiceId);
+        if(data.roleFilters) Object.assign(roleFilters, data.roleFilters);
+        if(data.stageVoiceId) stageVoiceId=data.stageVoiceId;
+        if(roles.length) buildRoleVoiceUI();
+        setSyncStatus('ok','☁️ Voci aggiornate dal gruppo');
+      }
+    },
+    (err)=>{setSyncStatus('err','⚠ Errore connessione: '+err.message);}
+  );
+}
+
+async function saveSharedVoices(){
+  if(!fbReady){showToast('Database non connesso');return;}
+  const btn=document.getElementById('saveSharedBtn');
+  const lbl=document.getElementById('saveSharedLabel');
+  const ico=document.getElementById('saveSharedIcon');
+  btn.classList.add('saving');
+  lbl.textContent='Salvataggio in corso…';
+  ico.textContent='⏳';
+  // also save stageVoiceId from select
+  stageVoiceId=document.getElementById('stageVoiceSelect').value||STAGE_VOICE_ID;
+  try{
+    await window._setDoc(window._fbDoc(SHARED_DOC_ID),{
+      roleVoiceId,
+      roleFilters,
+      stageVoiceId,
+      updatedAt: new Date().toISOString()
+    });
+    lbl.textContent='✓ Voci salvate per tutto il gruppo!';
+    ico.textContent='✅';
+    setTimeout(()=>{
+      lbl.textContent='Salva voci per tutto il gruppo';
+      ico.textContent='☁️';
+      btn.classList.remove('saving');
+    },2500);
+  }catch(e){
+    lbl.textContent='Errore: '+e.message;
+    ico.textContent='⚠';
+    btn.classList.remove('saving');
+  }
+}
+
+/* ══ INIT ══ */
+window.addEventListener('firebase-ready',initFirebase);
+setTimeout(initFirebase,300);
+
+/* ══ NAVIGATION ══ */
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);}
+function goBack(){stopAudio();if(lines.length)showScreen('screen-player');else showScreen('screen-home');}
+function goHome(){stopAudio();isPlaying=false;updatePlayBtn();showScreen('screen-home');}
+function goSettings(){stopAudio();isPlaying=false;updatePlayBtn();buildRoleVoiceUI();showScreen('screen-settings');}
+function saveAndPlay(){
+  myChar=document.getElementById('myCharSelect').value;
+  readMyLines=document.getElementById('readMyLines').checked;
+  readStageDirections=document.getElementById('readStageDirections').checked;
+  stageVoiceId=document.getElementById('stageVoiceSelect').value||STAGE_VOICE_ID;
+  // save local prefs
+  localStorage.setItem('myChar',myChar);
+  localStorage.setItem('readMyLines',readMyLines);
+  showScreen('screen-player');
+  renderScript();
+  if(!isPlaying)startPlaying();
+}
+
+/* ══ SETTINGS UI ══ */
+function populateMyCharSelect(){
+  const sel=document.getElementById('myCharSelect');
+  // restore local pref
+  const savedChar=localStorage.getItem('myChar')||'';
+  sel.innerHTML='<option value="">— Nessuno (spettatore) —</option>'+roles.map(r=>`<option value="${r}">${r}</option>`).join('');
+  if(savedChar&&roles.includes(savedChar)){sel.value=savedChar;myChar=savedChar;}
+  const savedRead=localStorage.getItem('readMyLines');
+  if(savedRead!==null)document.getElementById('readMyLines').checked=savedRead==='true';
+  updateMyChar();
+}
+
+function updateMyChar(){
+  myChar=document.getElementById('myCharSelect').value;
+  document.getElementById('myCharOptions').style.display=myChar?'block':'none';
+}
+
+function buildStageVoiceSelect(){
+  const sel=document.getElementById('stageVoiceSelect');
+  sel.innerHTML=VOICES.map(v=>`<option value="${v.id}" ${v.id===stageVoiceId?'selected':''}>${v.g==='F'?'♀':'♂'} ${v.name} — ${v.style[0]}</option>`).join('');
+}
+
+function buildRoleVoiceUI(){
+  buildStageVoiceSelect();
+  const container=document.getElementById('roleVoiceList');
+  const saveBtn=document.getElementById('saveSharedBtn');
+  if(!roles.length){
+    container.innerHTML='<div style="color:var(--muted);font-style:italic;font-size:0.88rem;">Carica prima un copione.</div>';
+    if(saveBtn)saveBtn.style.display='none';
+    return;
+  }
+  if(saveBtn)saveBtn.style.display='flex';
+
+  container.innerHTML=roles.map((r,ri)=>{
+    const isMe=r===myChar;
+    const color=roleColors[r]||'#c9a84c';
+    const f=roleFilters[r]||{g:null,age:null,tone:null,style:null};
+    const curVoice=VOICES.find(v=>v.id===roleVoiceId[r])||VOICES[ri%VOICES.length];
+    return `
+    <div class="role-card ${isMe?'my-char-card':''}" id="rolecard-${ri}">
+      <div class="role-card-header">
+        <div class="role-name-display"><span class="color-swatch" style="background:${color}"></span>${r}</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          ${isMe?'<span class="my-char-badge">tu</span>':''}
+          <button class="preview-btn" id="prevbtn-${ri}" onclick="previewRoleVoice('${r}',${ri})" title="Ascolta">▶</button>
+        </div>
+      </div>
+      <div class="picker-label">Genere</div>
+      <div class="pill-group">
+        <span class="pill ${!f.g?'active':''}" onclick="setFilter('${r}','g',null,${ri})">Qualsiasi</span>
+        <span class="pill ${f.g==='M'?'active':''}" onclick="setFilter('${r}','g','M',${ri})">♂ Uomo</span>
+        <span class="pill f ${f.g==='F'?'active':''}" onclick="setFilter('${r}','g','F',${ri})">♀ Donna</span>
+      </div>
+      <div class="picker-label">Età</div>
+      <div class="pill-group">
+        <span class="pill ${!f.age?'active':''}" onclick="setFilter('${r}','age',null,${ri})">Qualsiasi</span>
+        <span class="pill ${f.age==='giovane'?'active':''}" onclick="setFilter('${r}','age','giovane',${ri})">Giovane</span>
+        <span class="pill ${f.age==='adulto'?'active':''}" onclick="setFilter('${r}','age','adulto',${ri})">Adulto</span>
+        <span class="pill ${f.age==='anziano'?'active':''}" onclick="setFilter('${r}','age','anziano',${ri})">Anziano</span>
+      </div>
+      <div class="picker-label">Tono</div>
+      <div class="pill-group">
+        <span class="pill ${!f.tone?'active':''}" onclick="setFilter('${r}','tone',null,${ri})">Qualsiasi</span>
+        <span class="pill ${f.tone==='grave'?'active':''}" onclick="setFilter('${r}','tone','grave',${ri})">Grave</span>
+        <span class="pill ${f.tone==='medio'?'active':''}" onclick="setFilter('${r}','tone','medio',${ri})">Medio</span>
+        <span class="pill ${f.tone==='acuto'?'active':''}" onclick="setFilter('${r}','tone','acuto',${ri})">Acuto</span>
+      </div>
+      <div class="picker-label">Carattere</div>
+      <div class="pill-group">
+        <span class="pill ${!f.style?'active':''}" onclick="setFilter('${r}','style',null,${ri})">Qualsiasi</span>
+        <span class="pill ${f.style==='elegante'?'active':''}" onclick="setFilter('${r}','style','elegante',${ri})">Elegante</span>
+        <span class="pill ${f.style==='autorevole'?'active':''}" onclick="setFilter('${r}','style','autorevole',${ri})">Autorevole</span>
+        <span class="pill ${f.style==='caldo'?'active':''}" onclick="setFilter('${r}','style','caldo',${ri})">Caldo</span>
+        <span class="pill ${f.style==='drammatico'?'active':''}" onclick="setFilter('${r}','style','drammatico',${ri})">Drammatico</span>
+        <span class="pill ${f.style==='naturale'?'active':''}" onclick="setFilter('${r}','style','naturale',${ri})">Naturale</span>
+        <span class="pill ${f.style==='fragile'?'active':''}" onclick="setFilter('${r}','style','fragile',${ri})">Fragile</span>
+        <span class="pill ${f.style==='rustico'?'active':''}" onclick="setFilter('${r}','style','rustico',${ri})">Rustico</span>
+        <span class="pill ${f.style==='vivace'?'active':''}" onclick="setFilter('${r}','style','vivace',${ri})">Vivace</span>
+      </div>
+      <div class="voice-result" id="voiceresult-${ri}">
+        <div>
+          <div class="voice-result-name">${curVoice.g==='F'?'♀':'♂'} ${curVoice.name}</div>
+          <div class="voice-result-desc">${curVoice.age} · ${curVoice.tone} · ${curVoice.style.join(', ')}</div>
+        </div>
+        <button class="preview-btn" onclick="previewRoleVoice('${r}',${ri})" title="Ascolta">▶</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setFilter(role,key,value,ri){
+  if(!roleFilters[role])roleFilters[role]={g:null,age:null,tone:null,style:null};
+  roleFilters[role][key]=value;
+  const f=roleFilters[role];
+  const ageVariants=f.age?[f.age,f.age==='adulto'?'adulta':f.age==='anziano'?'anziana':f.age]:null;
+  const matches=VOICES.filter(v=>{
+    if(f.g&&v.g!==f.g)return false;
+    if(ageVariants&&!ageVariants.includes(v.age))return false;
+    if(f.tone&&v.tone!==f.tone)return false;
+    if(f.style&&!v.style.includes(f.style))return false;
+    return true;
+  });
+  const picked=matches.length>0?matches[0]:VOICES[0];
+  roleVoiceId[role]=picked.id;
+  const res=document.getElementById('voiceresult-'+ri);
+  if(res)res.innerHTML=`
+    <div>
+      <div class="voice-result-name">${picked.g==='F'?'♀':'♂'} ${picked.name}</div>
+      <div class="voice-result-desc">${picked.age} · ${picked.tone} · ${picked.style.join(', ')}</div>
+    </div>
+    <button class="preview-btn" onclick="previewRoleVoice('${role}',${ri})" title="Ascolta">▶</button>`;
+  buildRoleVoiceUI();
+}
+
+/* ══ PREVIEW ══ */
+async function previewRoleVoice(role,ri){
+  const voiceId=roleVoiceId[role]||VOICES[0].id;
+  const btn=document.getElementById('prevbtn-'+ri);
+  await doPreview(voiceId,btn,'Ciao, questa è la mia voce per il teatro.');
+}
+async function previewStageVoice(){
+  const id=document.getElementById('stageVoiceSelect').value||STAGE_VOICE_ID;
+  await doPreview(id,document.getElementById('previewStageBtn'),'Atto primo. Una sera d\'estate. Il sipario si apre lentamente.');
+}
+async function doPreview(voiceId,btn,text){
+  stopAudio();
+  document.querySelectorAll('.preview-btn').forEach(b=>b.classList.remove('playing'));
+  if(activePreviewBtn===btn){activePreviewBtn=null;return;}
+  btn.classList.add('playing');activePreviewBtn=btn;
+  try{
+    const audio=await fetchEL(text,voiceId);
+    currentAudio=audio;
+    audio.onended=()=>{btn.classList.remove('playing');if(activePreviewBtn===btn)activePreviewBtn=null;currentAudio=null;};
+    audio.play();
+  }catch(e){btn.classList.remove('playing');showToast('Errore: '+e.message);}
+}
+
+/* ══ ELEVENLABS ══ */
+async function fetchEL(text,voiceId){
+  const res=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,{
+    method:'POST',
+    headers:{'xi-api-key':API_KEY,'Content-Type':'application/json','Accept':'audio/mpeg'},
+    body:JSON.stringify({text,model_id:EL_MODEL,voice_settings:{stability:0.5,similarity_boost:0.8,style:0.2,use_speaker_boost:true}})
+  });
+  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail?.message||'API error '+res.status);}
+  const audio=new Audio(URL.createObjectURL(await res.blob()));
+  audio.playbackRate=Math.min(2,Math.max(0.5,speechRate));
+  return audio;
+}
+
+/* ══ FILE HANDLING ══ */
+function handleFile(file){
+  if(!file)return;
+  fileName=file.name.replace(/\.[^.]+$/,'');
+  document.getElementById('playerTitle').textContent=fileName;
+  showLoading('Analisi del copione…');
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(ext==='pdf')parsePDF(file);
+  else if(ext==='docx'||ext==='doc')parseDOCX(file);
+  else parseTextFile(file);
+}
+function parsePDF(file){
+  const r=new FileReader();
+  r.onload=async e=>{
+    try{
+      const pdf=await pdfjsLib.getDocument({data:e.target.result}).promise;
+      let t='';
+      for(let i=1;i<=pdf.numPages;i++){const p=await pdf.getPage(i);const c=await p.getTextContent();t+=c.items.map(x=>x.str).join(' ')+'\n';}
+      processText(t);
+    }catch(err){hideLoading();showToast('Errore PDF: '+err.message);}
+  };
+  r.readAsArrayBuffer(file);
+}
+function parseDOCX(file){
+  const r=new FileReader();
+  r.onload=e=>mammoth.extractRawText({arrayBuffer:e.target.result}).then(x=>processText(x.value)).catch(err=>{hideLoading();showToast('Errore: '+err.message);});
+  r.readAsArrayBuffer(file);
+}
+function parseTextFile(file){
+  const r=new FileReader();
+  r.onload=e=>processText(e.target.result);
+  r.readAsText(file,'UTF-8');
+}
+function processText(rawText){
+  lines=[];roles=[];roleColors={};roleVoiceId={};roleFilters={};
+  for(let raw of rawText.split(/\n/)){
+    const t=raw.trim();if(!t)continue;
+    if(/^\[.+\]$/.test(t)||/^\(.+\)$/.test(t)||t.startsWith('*')){
+      lines.push({type:'stage',speaker:'Scena',text:t.replace(/^[\[\(*]|[\]\)*]$/g,'').trim()});continue;
+    }
+    const m=t.match(/^([A-ZÀ-Ý][A-Za-zÀ-ÿ\s\.]{0,30}):\s*(.+)$/)||t.match(/^([A-ZÀ-Ý][A-Za-zÀ-ÿ\s\.]{0,30})\s+[-–—]\s+(.+)$/);
+    if(m){
+      const speaker=m[1].trim(),text=m[2].trim();
+      if(!roles.includes(speaker)){roles.push(speaker);roleColors[speaker]=ROLE_COLORS[(roles.length-1)%ROLE_COLORS.length];}
+      lines.push({type:'dialogue',speaker,text});
+    }else{
+      lines.push({type:'stage',speaker:'Scena',text:t});
+    }
+  }
+  // assign default voices alternating M/F
+  roles.forEach((r,ri)=>{
+    roleFilters[r]={g:ri%2===0?'M':'F',age:null,tone:null,style:null};
+    const pool=VOICES.filter(v=>v.g===(ri%2===0?'M':'F'));
+    roleVoiceId[r]=(pool[ri%pool.length]||VOICES[0]).id;
+  });
+  hideLoading();populateMyCharSelect();buildRoleVoiceUI();renderScript();showScreen('screen-settings');
+}
+
+function loadDemo(){
+  fileName='Amleto';document.getElementById('playerTitle').textContent=fileName;
+  showLoading('Analisi del copione…');
+  setTimeout(()=>processText(`[Atto Primo — Un castello medievale. Notte fonda.]
+
+AMLETO: Essere o non essere, questo è il dilemma. Se sia più nobile nella mente sopportare i colpi e i dardi dell'oltraggioso destino.
+
+ORAZIO: Mio principe, vi attende il fantasma di vostro padre sui bastioni.
+
+AMLETO: Un fantasma? Nel cuore della notte? Andiamo a vederlo.
+
+(Orazio e Amleto si avviano verso i bastioni. Il vento ulula tra le mura.)
+
+FANTASMA: Figlio mio. Io fui assassinato dal tuo zio Claudio mentre dormivo nel mio giardino.
+
+AMLETO: Assassinato? Oh, cielo e terra! Non soffrirò questo oltraggio!
+
+FANTASMA: Vendica la mia ignominiosa e innaturale morte. Addio, addio. Ricordami.
+
+[Il fantasma svanisce lentamente nell'ombra]
+
+AMLETO: O terra che tremi! Dovrò sorridere e fare il malvagio?
+
+ORAZIO: Mio principe, state bene? Sembrate sconvolto.
+
+AMLETO: Sì, benissimo, amico mio. Giurate il silenzio.`),500);
+}
+
+/* ══ RENDER ══ */
+function renderScript(){
+  const c=document.getElementById('scriptContainer');
+  if(!lines.length){c.innerHTML='<div style="text-align:center;padding:60px;color:var(--muted);font-style:italic;">Nessuna riga trovata.</div>';return;}
+  c.innerHTML=lines.map((line,i)=>{
+    const isMe=line.type==='dialogue'&&line.speaker===myChar;
+    const color=line.type==='stage'?'var(--muted)':(roleColors[line.speaker]||'#c9a84c');
+    const skipped=isMe&&!readMyLines;
+    return `<div class="line-block ${isMe?'my-line':''} ${skipped?'skipped':''}" id="line-${i}" onclick="jumpToLine(${i})">
+      ${line.type==='dialogue'
+        ?`<div class="line-speaker" style="color:${color}">${line.speaker}${skipped?'<span class="skip-badge">saltata</span>':''}</div>`
+        :`<div class="line-speaker" style="color:var(--muted)">【 Scena 】</div>`}
+      <div class="line-text ${line.type==='stage'?'stage-direction':''}">${line.text}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ══ PLAYBACK ══ */
+function stopAudio(){if(currentAudio){currentAudio.pause();currentAudio=null;}setBuffering(false);}
+function setBuffering(b){document.getElementById('bufferingRing').classList.toggle('active',b);}
+function startPlaying(){isPlaying=true;updatePlayBtn();speakLine(currentLine);}
+async function speakLine(idx){
+  if(idx>=lines.length){isPlaying=false;updatePlayBtn();showToast('Copione terminato 🎭');return;}
+  currentLine=idx;updateActiveBlock();updateProgress();
+  const line=lines[idx];
+  const isMe=line.type==='dialogue'&&line.speaker===myChar;
+  if(line.type==='stage'&&!readStageDirections)return speakLine(idx+1);
+  if(isMe&&!readMyLines)return setTimeout(()=>speakLine(idx+1),200);
+  document.getElementById('currentSpeakerLabel').textContent=line.type==='stage'?'【 Scena 】':line.speaker;
+  const voiceId=line.type==='stage'?stageVoiceId:(roleVoiceId[line.speaker]||VOICES[0].id);
+  setBuffering(true);
+  try{
+    if(!isPlaying){setBuffering(false);return;}
+    const audio=await fetchEL(line.text,voiceId);
+    if(!isPlaying){setBuffering(false);return;}
+    setBuffering(false);currentAudio=audio;
+    audio.onended=()=>{currentAudio=null;if(isPlaying)speakLine(idx+1);};
+    audio.onerror=()=>{currentAudio=null;if(isPlaying)speakLine(idx+1);};
+    audio.play();
+  }catch(e){
+    setBuffering(false);
+    showToast('⚠ '+e.message);
+    if(isPlaying)setTimeout(()=>speakLine(idx+1),1500);
+  }
+}
+function togglePlay(){if(isPlaying){isPlaying=false;stopAudio();updatePlayBtn();}else{isPlaying=true;updatePlayBtn();speakLine(currentLine);}}
+function prevLine(){stopAudio();currentLine=Math.max(0,currentLine-1);if(isPlaying)speakLine(currentLine);else{updateActiveBlock();updateProgress();}}
+function nextLine(){stopAudio();currentLine=Math.min(lines.length-1,currentLine+1);if(isPlaying)speakLine(currentLine);else{updateActiveBlock();updateProgress();}}
+function skipBack(){stopAudio();currentLine=Math.max(0,currentLine-3);if(isPlaying)speakLine(currentLine);else updateActiveBlock();}
+function skipFwd(){stopAudio();currentLine=Math.min(lines.length-1,currentLine+3);if(isPlaying)speakLine(currentLine);else updateActiveBlock();}
+function jumpToLine(idx){stopAudio();currentLine=idx;updateActiveBlock();updateProgress();if(isPlaying)speakLine(currentLine);}
+function changeSpeed(d){speechRate=Math.min(2,Math.max(0.5,+(speechRate+d).toFixed(1)));document.getElementById('speedLabel').textContent=speechRate.toFixed(1)+'×';if(isPlaying){stopAudio();speakLine(currentLine);}}
+function updatePlayBtn(){document.getElementById('playBtn').textContent=isPlaying?'⏸':'▶';}
+function updateActiveBlock(){
+  document.querySelectorAll('.line-block').forEach((el,i)=>{el.classList.remove('active','past');if(i<currentLine)el.classList.add('past');if(i===currentLine)el.classList.add('active');});
+  const el=document.getElementById('line-'+currentLine);
+  if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
+}
+function updateProgress(){document.getElementById('progressFill').style.width=(lines.length>1?(currentLine/(lines.length-1)*100):0)+'%';}
+function handleProgressClick(e){const r=e.currentTarget.getBoundingClientRect();jumpToLine(Math.max(0,Math.min(lines.length-1,Math.round((e.clientX-r.left)/r.width*(lines.length-1)))));}
+
+/* DRAG & DROP */
+const dropZone=document.getElementById('dropZone');
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('drag-over');});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('drag-over');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});
+
+/* UTILS */
+function showLoading(msg){document.getElementById('loadingText').textContent=msg||'…';document.getElementById('loadingOverlay').classList.remove('hidden');}
+function hideLoading(){document.getElementById('loadingOverlay').classList.add('hidden');}
+let _tt;
+function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),3500);}
+</script>
+</body>
+</html>
