@@ -339,12 +339,11 @@ select:focus{outline:none;border-color:var(--gold);}
   <div class="settings-body">
 
     <div class="field-group">
-      <div class="section-title">Il mio personaggio</div>
-      <div class="section-subtitle">💾 Salvato solo su questo dispositivo</div>
-      <label class="field-label">Chi interpreti?</label>
-      <select id="myCharSelect" onchange="updateMyChar()">
-        <option value="">— Nessuno (spettatore) —</option>
-      </select>
+      <div class="section-title">I miei personaggi</div>
+      <div class="section-subtitle">💾 Salvato solo su questo dispositivo — fino a 5 ruoli</div>
+      <div id="myCharSelects" style="display:flex;flex-direction:column;gap:8px;">
+        <!-- generati da JS -->
+      </div>
     </div>
     <div id="myCharOptions" style="display:none;margin-bottom:20px;">
       <div style="margin-bottom:8px;">
@@ -547,7 +546,7 @@ let lines=[], roles=[], roleColors={};
 let roleVoiceId={}, roleFilters={};
 let actionVoiceId=DEFAULT_ACTION_VOICE;
 let descVoiceId=DEFAULT_DESC_VOICE;
-let myChar='', readActions=true, readDescriptions=true;
+let myChars=[], readActions=true, readDescriptions=true; // myChars = array fino a 5 ruoli
 let speechRate=1.0;
 let currentLine=0, isPlaying=false;
 let fileName='Copione';
@@ -733,12 +732,11 @@ function goBack(){stopAudio();if(lines.length)showScreen('screen-player');else s
 function goHome(){stopAudio();isPlaying=false;updatePlayBtn();renderSlots();showScreen('screen-home');}
 function goSettings(){stopAudio();isPlaying=false;updatePlayBtn();buildRoleVoiceUI();initSkipLabels();showScreen('screen-settings');}
 function saveAndPlay(){
-  myChar=document.getElementById('myCharSelect').value;
+  updateMyChar(); // assicura myChars aggiornato
   readActions=document.getElementById('readActions').checked;
   readDescriptions=document.getElementById('readDescriptions').checked;
   actionVoiceId=document.getElementById('actionVoiceSelect')?.value||DEFAULT_ACTION_VOICE;
   descVoiceId=document.getElementById('descVoiceSelect')?.value||DEFAULT_DESC_VOICE;
-  localStorage.setItem('myChar',myChar);
   stopAudio(); isPlaying=false; currentLine=0;
   showScreen('screen-player');
   renderScript();
@@ -750,19 +748,49 @@ function saveMyLineMode(val){localStorage.setItem('myLineMode',val);}
 function getMyLineMode(){return localStorage.getItem('myLineMode')||'pause';}
 
 function populateMyCharSelect(){
-  const sel=document.getElementById('myCharSelect');
-  const saved=localStorage.getItem('myChar')||'';
-  sel.innerHTML='<option value="">— Nessuno (spettatore) —</option>'+
-    roles.map(r=>`<option value="${r}">${r}</option>`).join('');
-  if(saved&&roles.includes(saved)){sel.value=saved;myChar=saved;}
+  const saved=JSON.parse(localStorage.getItem('myChars')||'[]');
+  myChars=saved.filter(c=>roles.includes(c));
+  buildMyCharSelects();
   const mode=getMyLineMode();
   document.querySelectorAll('input[name="myLineMode"]').forEach(r=>{r.checked=(r.value===mode);});
-  updateMyChar();
+  updateMyCharOptions();
 }
+
+function buildMyCharSelects(){
+  const container=document.getElementById('myCharSelects');
+  if(!container) return;
+  const showCount=Math.min(5, myChars.length+1);
+  const opts=roles.map(r=>`<option value="${r}">${r}</option>`).join('');
+  container.innerHTML=Array.from({length:showCount},(_,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:0.75rem;color:var(--muted);min-width:16px;text-align:right;">${i+1}.</span>
+      <select id="myCharSelect_${i}" onchange="updateMyChar()" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--cream);padding:9px 12px;border-radius:6px;font-family:'Cormorant Garamond',serif;font-size:0.95rem;">
+        <option value="">— Nessuno —</option>${opts}
+      </select>
+    </div>`).join('');
+  myChars.forEach((c,i)=>{
+    const sel=document.getElementById('myCharSelect_'+i);
+    if(sel) sel.value=c;
+  });
+}
+
 function updateMyChar(){
-  myChar=document.getElementById('myCharSelect').value;
-  document.getElementById('myCharOptions').style.display=myChar?'block':'none';
-  localStorage.setItem('myChar',myChar);
+  const newChars=[];
+  for(let i=0;i<5;i++){
+    const sel=document.getElementById('myCharSelect_'+i);
+    if(!sel) break;
+    const v=sel.value;
+    if(v&&!newChars.includes(v)) newChars.push(v);
+  }
+  myChars=newChars;
+  localStorage.setItem('myChars',JSON.stringify(myChars));
+  buildMyCharSelects();
+  updateMyCharOptions();
+}
+
+function updateMyCharOptions(){
+  const opt=document.getElementById('myCharOptions');
+  if(opt) opt.style.display=myChars.length>0?'block':'none';
 }
 
 function buildSpecialVoiceSelects(){
@@ -785,7 +813,7 @@ function buildRoleVoiceUI(){
   if(saveBtn) saveBtn.style.display='flex';
 
   container.innerHTML=roles.map((r,ri)=>{
-    const isMe=r===myChar;
+    const isMe=myChars.includes(r);
     const isCoro=r==='TUTTI';
     const color=roleColors[r]||'#c9a84c';
     const f=roleFilters[r]||{g:null,age:null,tone:null,style:null};
@@ -1029,10 +1057,10 @@ function loadDemo(){
 function renderScript(){
   const c=document.getElementById('scriptContainer');
   if(!lines.length){c.innerHTML='<div style="text-align:center;padding:60px;color:var(--muted);font-style:italic;">Nessuna riga trovata.</div>';return;}
-  const _myChar=localStorage.getItem('myChar')||myChar;
+  const _myChars=JSON.parse(localStorage.getItem('myChars')||'[]');
   const _readMyLines=getMyLineMode()==='read';
   c.innerHTML=lines.map((line,i)=>{
-    const isMe=line.type==='dialogue'&&line.speaker===_myChar;
+    const isMe=line.type==='dialogue'&&_myChars.includes(line.speaker);
     const skipped=isMe&&!_readMyLines;
     let speakerColor=roleColors[line.speaker]||'var(--muted)';
     let blockClass='line-block';
@@ -1077,9 +1105,9 @@ async function speakLine(idx){
   const line=lines[idx];
 
   // Leggi sempre i valori aggiornati da localStorage
-  const _myChar = localStorage.getItem('myChar')||myChar;
+  const _myChars = JSON.parse(localStorage.getItem('myChars')||'[]');
   const _mode = getMyLineMode(); // 'read' | 'pause' | 'silent'
-  const isMe = line.type==='dialogue' && line.speaker===_myChar;
+  const isMe = line.type==='dialogue' && _myChars.includes(line.speaker);
 
   if(line.type==='action'&&!readActions) return speakLine(idx+1);
   if(line.type==='description'&&!readDescriptions) return speakLine(idx+1);
@@ -1242,11 +1270,10 @@ function togglePlay(){
     isPlaying=false; stopAudio(); updatePlayBtn();
   } else {
     isPlaying=true; updatePlayBtn();
-    // Se la riga corrente è la mia battuta in modalità pausa, avanza alla prossima
-    const _myChar=localStorage.getItem('myChar')||myChar;
+    const _myChars=JSON.parse(localStorage.getItem('myChars')||'[]');
     const _mode=getMyLineMode();
     const line=lines[currentLine];
-    if(line && line.type==='dialogue' && line.speaker===_myChar && _mode==='pause'){
+    if(line && line.type==='dialogue' && _myChars.includes(line.speaker) && _mode==='pause'){
       currentLine=Math.min(lines.length-1, currentLine+1);
     }
     speakLine(currentLine);
