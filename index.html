@@ -854,9 +854,10 @@ function loadDemo(){
 function renderScript(){
   const c=document.getElementById('scriptContainer');
   if(!lines.length){c.innerHTML='<div style="text-align:center;padding:60px;color:var(--muted);font-style:italic;">Nessuna riga trovata.</div>';return;}
-  c.innerHTML=lines.map((line,i)=>{
-    const isMe=line.type==='dialogue'&&line.speaker===myChar;
-    const skipped=isMe&&!readMyLines;
+  const _myChar=localStorage.getItem('myChar')||myChar;
+  const _readMyLines=localStorage.getItem('readMyLines')!=='false';  c.innerHTML=lines.map((line,i)=>{
+    const isMe=line.type==='dialogue'&&line.speaker===_myChar;
+    const skipped=isMe&&!_readMyLines;
     let speakerColor=roleColors[line.speaker]||'var(--muted)';
     let blockClass='line-block';
     let textClass='line-text';
@@ -898,11 +899,23 @@ async function speakLine(idx){
   if(idx>=lines.length){isPlaying=false;updatePlayBtn();showToast('Copione terminato 🎭');return;}
   currentLine=idx; updateActiveBlock(); updateProgress();
   const line=lines[idx];
-  const isMe=line.type==='dialogue'&&line.speaker===myChar;
+
+  // Leggi sempre i valori aggiornati da localStorage (fix Bug 1)
+  const _readMyLines = localStorage.getItem('readMyLines')!=='false';
+  const _myChar = localStorage.getItem('myChar')||myChar;
+  const isMe = line.type==='dialogue' && line.speaker===_myChar;
 
   if(line.type==='action'&&!readActions) return speakLine(idx+1);
   if(line.type==='description'&&!readDescriptions) return speakLine(idx+1);
-  if(isMe&&!readMyLines) return setTimeout(()=>speakLine(idx+1),200);
+
+  // Bug 2 fix: se è la mia battuta e non devo leggerla → PAUSA, aspetta che l'attore prema ⏭
+  if(isMe && !_readMyLines){
+    isPlaying=false;
+    updatePlayBtn();
+    document.getElementById('currentSpeakerLabel').textContent='🎤 '+line.speaker+' — tocca ⏭ quando hai finito';
+    // Non chiamare speakLine(idx+1) — l'utente deve premere ⏭ manualmente
+    return;
+  }
 
   // Speaker label
   const labels={action:'【 Azione 】',description:'【 Scena 】',coro:'🎭 TUTTI — coro',dialogue:line.speaker};
@@ -1040,10 +1053,22 @@ function fetchSystem(text,elVoiceId){
 
 /* ══ CONTROLS ══ */
 function togglePlay(){if(isPlaying){isPlaying=false;stopAudio();updatePlayBtn();}else{isPlaying=true;updatePlayBtn();speakLine(currentLine);}}
-function prevLine(){stopAudio();currentLine=Math.max(0,currentLine-1);if(isPlaying)speakLine(currentLine);else{updateActiveBlock();updateProgress();}}
-function nextLine(){stopAudio();currentLine=Math.min(lines.length-1,currentLine+1);if(isPlaying)speakLine(currentLine);else{updateActiveBlock();updateProgress();}}
-function skipBack(){stopAudio();currentLine=Math.max(0,currentLine-3);if(isPlaying)speakLine(currentLine);else updateActiveBlock();}
-function skipFwd(){stopAudio();currentLine=Math.min(lines.length-1,currentLine+3);if(isPlaying)speakLine(currentLine);else updateActiveBlock();}
+function prevLine(){stopAudio();currentLine=Math.max(0,currentLine-1);isPlaying=true;updatePlayBtn();speakLine(currentLine);}
+function nextLine(){
+  stopAudio();
+  currentLine=Math.min(lines.length-1,currentLine+1);
+  isPlaying=true; // riprende sempre dopo aver premuto ⏭
+  updatePlayBtn();
+  speakLine(currentLine);
+}
+function skipBack(){stopAudio();currentLine=Math.max(0,currentLine-3);isPlaying=true;updatePlayBtn();speakLine(currentLine);}
+function skipFwd(){
+  stopAudio();
+  currentLine=Math.min(lines.length-1,currentLine+3);
+  isPlaying=true;
+  updatePlayBtn();
+  speakLine(currentLine);
+}
 function jumpToLine(idx){stopAudio();currentLine=idx;updateActiveBlock();updateProgress();if(isPlaying)speakLine(currentLine);}
 function changeSpeed(d){speechRate=Math.min(2,Math.max(0.5,+(speechRate+d).toFixed(1)));document.getElementById('speedLabel').textContent=speechRate.toFixed(1)+'×';if(isPlaying){stopAudio();speakLine(currentLine);}}
 function updatePlayBtn(){document.getElementById('playBtn').textContent=isPlaying?'⏸':'▶';}
