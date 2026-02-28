@@ -1000,11 +1000,14 @@ async function fetchTTS(text, elVoiceId){
       if(ttsEngine!=='elevenlabs'){ttsEngine='elevenlabs';updateEngineStatus();}
       return audio;
     }catch(e){
+      console.warn('[EL error]', e.message);
       if(e.message.startsWith('QUOTA:')||e.message.includes('quota')||e.message.includes('credit')||e.message.includes('exceed')){
         elQuotaExhausted=true;
         showToast('ElevenLabs esaurito → OpenAI TTS');
       } else {
-        throw e; // real error, don't silently swallow
+        // Log but still try OpenAI — EL might be down
+        console.warn('[EL non-quota error, trying OAI anyway]', e.message);
+        showToast('EL: '+e.message.slice(0,60));
       }
     }
   }
@@ -1015,11 +1018,11 @@ async function fetchTTS(text, elVoiceId){
       if(ttsEngine!=='openai'){ttsEngine='openai';updateEngineStatus();}
       return audio;
     }catch(e){
-      if(e.message.includes('quota')||e.message.includes('billing')||e.message.includes('insufficient')||e.message.includes('429')){
+      console.warn('[OAI error]', e.message);
+      showToast('OAI: '+e.message.slice(0,60));
+      if(e.message.includes('quota')||e.message.includes('billing')||e.message.includes('insufficient')||e.message.includes('429')||e.message.includes('credit')){
         oaiQuotaExhausted=true;
-        showToast('OpenAI esaurito → voce di sistema');
-      } else {
-        throw e;
+        showToast('OpenAI non disponibile → voce di sistema');
       }
     }
   }
