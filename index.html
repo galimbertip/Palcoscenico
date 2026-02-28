@@ -311,7 +311,7 @@ select:focus{outline:none;border-color:var(--gold);}
           <div class="toggle-label">Leggi le mie battute</div>
           <div class="toggle-desc">Se disattivato le tue battute vengono saltate</div>
         </div>
-        <label class="toggle"><input type="checkbox" id="readMyLines" checked><span class="toggle-slider"></span></label>
+        <label class="toggle"><input type="checkbox" id="readMyLines" checked onchange="localStorage.setItem('readMyLines',this.checked)"><span class="toggle-slider"></span></label>
       </div>
     </div>
 
@@ -597,6 +597,10 @@ function populateMyCharSelect(){
 function updateMyChar(){
   myChar=document.getElementById('myCharSelect').value;
   document.getElementById('myCharOptions').style.display=myChar?'block':'none';
+  // Salva subito in locale — non serve premere nessun bottone
+  localStorage.setItem('myChar', myChar);
+  const rl=document.getElementById('readMyLines');
+  if(rl) localStorage.setItem('readMyLines', rl.checked);
 }
 
 function buildSpecialVoiceSelects(){
@@ -993,14 +997,14 @@ async function fetchTTS(text, elVoiceId){
   if(!elQuotaExhausted){
     try{
       const audio=await fetchEL(text, elVoiceId);
-      ttsEngine='elevenlabs'; updateEngineStatus();
+      if(ttsEngine!=='elevenlabs'){ttsEngine='elevenlabs';updateEngineStatus();}
       return audio;
     }catch(e){
-      if(e.message.includes('quota')||e.message.includes('credit')||e.message.includes('429')||e.message.includes('limit')){
+      if(e.message.startsWith('QUOTA:')||e.message.includes('quota')||e.message.includes('credit')||e.message.includes('exceed')){
         elQuotaExhausted=true;
         showToast('ElevenLabs esaurito → OpenAI TTS');
       } else {
-        throw e;
+        throw e; // real error, don't silently swallow
       }
     }
   }
@@ -1008,10 +1012,10 @@ async function fetchTTS(text, elVoiceId){
   if(!oaiQuotaExhausted){
     try{
       const audio=await fetchOAI(text, elToOaiVoice(elVoiceId));
-      ttsEngine='openai'; updateEngineStatus();
+      if(ttsEngine!=='openai'){ttsEngine='openai';updateEngineStatus();}
       return audio;
     }catch(e){
-      if(e.message.includes('quota')||e.message.includes('billing')||e.message.includes('429')||e.message.includes('insufficient')){
+      if(e.message.includes('quota')||e.message.includes('billing')||e.message.includes('insufficient')||e.message.includes('429')){
         oaiQuotaExhausted=true;
         showToast('OpenAI esaurito → voce di sistema');
       } else {
@@ -1019,8 +1023,8 @@ async function fetchTTS(text, elVoiceId){
       }
     }
   }
-  // System TTS fallback
-  ttsEngine='system'; updateEngineStatus();
+  // System TTS fallback — always works
+  if(ttsEngine!=='system'){ttsEngine='system';updateEngineStatus();}
   return fetchSystem(text, elVoiceId);
 }
 
@@ -1030,7 +1034,15 @@ async function fetchEL(text,voiceId){
     headers:{'xi-api-key':API_KEY_EL,'Content-Type':'application/json','Accept':'audio/mpeg'},
     body:JSON.stringify({text,model_id:EL_MODEL,voice_settings:{stability:0.5,similarity_boost:0.8,style:0.2,use_speaker_boost:true}})
   });
-  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail?.message||'API error '+res.status);}
+  if(!res.ok){
+    const e=await res.json().catch(()=>({}));
+    const msg=(e.detail?.message||e.detail?.status||JSON.stringify(e)||'API error '+res.status);
+    // ElevenLabs quota errors: status 429 or message contains these keywords
+    if(res.status===429||/quota|credit|limit|exceed/i.test(msg)){
+      throw new Error('QUOTA:'+msg);
+    }
+    throw new Error(msg);
+  }
   const audio=new Audio(URL.createObjectURL(await res.blob()));
   audio.playbackRate=Math.min(2,Math.max(0.5,speechRate));
   return audio;
