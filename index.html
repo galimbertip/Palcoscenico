@@ -41,7 +41,8 @@ window.dispatchEvent(new Event('firebase-ready'));
   --gold:#c9a84c; --gold2:#e8c97a;
   --crimson:#8b1a2e; --crimson2:#b52240;
   --cream:#f0e6d3; --cream2:#d4c4a8; --muted:#6b5a52;
-  --green:#5a9e6f; --border:rgba(201,168,76,0.2);
+  --green:#5a9e6f; --blue:#5a7e9e; --purple:#7e5a9e;
+  --border:rgba(201,168,76,0.2);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--cream);font-family:'Cormorant Garamond',serif;min-height:100vh;overflow-x:hidden;}
@@ -54,14 +55,13 @@ header{padding:16px 20px;display:flex;align-items:center;justify-content:space-b
 .header-btn{background:none;border:1px solid var(--border);color:var(--cream2);padding:7px 13px;border-radius:4px;font-family:'Cormorant Garamond',serif;font-size:0.95rem;cursor:pointer;transition:all 0.2s;}
 .header-btn:hover{border-color:var(--gold);color:var(--gold);}
 
-/* ── HOME ── */
+/* HOME */
 #screen-home{padding:0;}
-.home-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 20px;gap:0;}
+.home-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 20px;}
 .curtain-divider{width:60px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:20px auto;}
 .home-title{font-family:'Playfair Display',serif;font-size:clamp(2rem,8vw,3.2rem);font-style:italic;color:var(--gold);line-height:1.1;text-align:center;text-shadow:0 2px 20px rgba(201,168,76,0.3);}
 .home-sub{font-family:'IM Fell English',serif;font-size:1rem;color:var(--cream2);font-style:italic;margin-top:6px;opacity:0.8;text-align:center;}
 
-/* SAVED SCRIPT CARD */
 .saved-script-card{width:100%;max-width:400px;margin-top:28px;background:var(--bg3);border:1px solid var(--gold);border-radius:10px;overflow:hidden;}
 .saved-script-header{padding:16px 18px;display:flex;align-items:center;gap:12px;}
 .saved-script-icon{font-size:1.8rem;flex-shrink:0;}
@@ -75,34 +75,35 @@ header{padding:16px 20px;display:flex;align-items:center;justify-content:space-b
 .script-action-btn.secondary{color:var(--muted);}
 .script-action-btn.secondary:hover{background:rgba(255,255,255,0.03);color:var(--cream2);}
 
-/* NO SCRIPT STATE */
 .upload-zone{margin:28px auto 0;width:100%;max-width:400px;border:1px dashed var(--gold);border-radius:8px;padding:36px 24px;background:rgba(201,168,76,0.03);cursor:pointer;transition:all 0.3s;position:relative;text-align:center;}
 .upload-zone:hover,.upload-zone.drag-over{background:rgba(201,168,76,0.08);border-color:var(--gold2);transform:translateY(-2px);}
 .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
 .upload-icon{font-size:2.2rem;margin-bottom:10px;}
 .upload-label{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--gold);display:block;margin-bottom:5px;}
 .upload-hint{font-size:0.82rem;color:var(--muted);font-style:italic;}
-.demo-btn{margin-top:16px;background:none;border:none;color:var(--muted);font-family:'Cormorant Garamond',serif;font-size:0.9rem;font-style:italic;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+.demo-btn{margin-top:14px;background:none;border:none;color:var(--muted);font-family:'Cormorant Garamond',serif;font-size:0.9rem;font-style:italic;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
 .demo-btn:hover{color:var(--cream2);}
 
-/* SYNC BAR */
+/* FORMAT LEGEND */
+.format-legend{width:100%;max-width:400px;margin-top:14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:13px 15px;}
+.format-legend-title{font-family:'Playfair Display',serif;font-style:italic;color:var(--gold);font-size:0.92rem;margin-bottom:10px;}
+.legend-row{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.84rem;}
+.legend-row:last-child{border-bottom:none;}
+.legend-sample{width:90px;flex-shrink:0;font-size:0.82rem;}
+.legend-sample.normal{color:var(--cream);}
+.legend-sample.bold{color:var(--gold2);font-weight:700;}
+.legend-sample.italic{color:var(--blue);font-style:italic;}
+.legend-sample.coro{color:var(--purple);}
+.legend-desc{color:var(--muted);font-size:0.8rem;font-style:italic;}
+
 .sync-bar{display:flex;align-items:center;gap:8px;margin:14px auto 0;max-width:400px;width:100%;padding:9px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;color:var(--cream2);}
 .sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .sync-dot.ok{background:var(--green);}
-.sync-dot.loading{background:var(--gold);animation:pulse 1s infinite;}
+.sync-dot.loading{background:var(--gold);animation:blink 1s infinite;}
 .sync-dot.err{background:var(--crimson2);}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
 
-.tip-box{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:13px 15px;margin-top:14px;font-size:0.84rem;color:var(--cream2);line-height:1.6;max-width:400px;width:100%;}
-.tip-box strong{color:var(--gold);display:block;margin-bottom:4px;font-family:'Playfair Display',serif;font-style:italic;}
-
-/* UPLOAD NEW (inline, small) */
-.upload-new-zone{width:100%;max-width:400px;margin-top:10px;border:1px dashed rgba(201,168,76,0.3);border-radius:8px;padding:14px 18px;background:transparent;cursor:pointer;transition:all 0.3s;position:relative;text-align:center;display:none;}
-.upload-new-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
-.upload-new-zone:hover{border-color:var(--gold);background:rgba(201,168,76,0.05);}
-.upload-new-label{font-size:0.88rem;color:var(--muted);font-style:italic;}
-
-/* ── SETTINGS ── */
+/* SETTINGS */
 #screen-settings{padding:0 0 40px;}
 .settings-body{padding:20px;flex:1;overflow-y:auto;}
 .section-title{font-family:'Playfair Display',serif;font-size:1.1rem;font-style:italic;color:var(--gold);margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);}
@@ -112,16 +113,17 @@ header{padding:16px 20px;display:flex;align-items:center;justify-content:space-b
 select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--cream);padding:9px 30px 9px 11px;font-family:'Cormorant Garamond',serif;font-size:0.93rem;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23c9a84c'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;}
 select:focus{outline:none;border-color:var(--gold);}
 
-/* ROLE CARDS */
 .role-list{display:flex;flex-direction:column;gap:12px;}
 .role-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;}
 .role-card.my-char-card{border-color:var(--crimson);background:rgba(139,26,46,0.06);}
+.role-card.coro-card{border-color:var(--purple);background:rgba(126,90,158,0.06);}
 .role-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .role-name-display{font-family:'Playfair Display',serif;font-style:italic;font-size:1.05rem;}
 .my-char-badge{font-size:0.68rem;color:var(--crimson2);background:rgba(139,26,46,0.2);border:1px solid rgba(139,26,46,0.3);padding:2px 7px;border-radius:10px;}
+.coro-badge{font-size:0.68rem;color:#b090d8;background:rgba(126,90,158,0.2);border:1px solid rgba(126,90,158,0.3);padding:2px 7px;border-radius:10px;}
 .preview-btn{flex-shrink:0;background:none;border:1px solid var(--border);color:var(--cream2);width:33px;height:33px;border-radius:4px;cursor:pointer;font-size:0.95rem;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
 .preview-btn:hover{border-color:var(--gold);color:var(--gold);}
-.preview-btn.playing{border-color:var(--crimson2);color:var(--crimson2);animation:pulse 1s infinite;}
+.preview-btn.playing{border-color:var(--crimson2);color:var(--crimson2);animation:blink 1s infinite;}
 .picker-label{font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;}
 .pill-group{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
 .pill{background:var(--bg2);border:1px solid var(--border);color:var(--cream2);padding:5px 12px;border-radius:20px;font-family:'Cormorant Garamond',serif;font-size:0.85rem;cursor:pointer;transition:all 0.18s;white-space:nowrap;}
@@ -153,11 +155,13 @@ select:focus{outline:none;border-color:var(--gold);}
 .btn-secondary{display:block;width:100%;padding:11px;background:none;color:var(--cream2);border:1px solid var(--border);border-radius:6px;font-family:'Cormorant Garamond',serif;font-size:0.97rem;cursor:pointer;transition:all 0.2s;margin-top:8px;}
 .btn-secondary:hover{border-color:var(--gold);color:var(--gold);}
 
-/* ── PLAYER ── */
+/* PLAYER */
 #screen-player{padding:0;}
 .player-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
 .play-title{font-family:'Playfair Display',serif;font-size:1.05rem;font-style:italic;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%;}
 .script-container{flex:1;overflow-y:auto;padding:18px;padding-bottom:220px;scroll-behavior:smooth;}
+
+/* LINE TYPES */
 .line-block{margin-bottom:3px;padding:10px 13px;border-radius:6px;border-left:3px solid transparent;transition:all 0.3s;cursor:pointer;}
 .line-block:hover{background:rgba(255,255,255,0.02);}
 .line-block.active{background:rgba(201,168,76,0.07);border-left-color:var(--gold);}
@@ -165,10 +169,24 @@ select:focus{outline:none;border-color:var(--gold);}
 .line-block.my-line{border-left-color:var(--crimson);}
 .line-block.my-line.active{background:rgba(139,26,46,0.1);}
 .line-block.skipped{opacity:0.28;}
+/* azione (grassetto) */
+.line-block.type-action{border-left-color:rgba(201,168,76,0.5);}
+.line-block.type-action.active{background:rgba(201,168,76,0.06);}
+/* descrizione (corsivo) */
+.line-block.type-description{border-left-color:rgba(90,126,158,0.5);}
+.line-block.type-description.active{background:rgba(90,126,158,0.06);}
+/* coro */
+.line-block.type-coro{border-left-color:rgba(126,90,158,0.6);}
+.line-block.type-coro.active{background:rgba(126,90,158,0.07);}
+
 .line-speaker{font-family:'Playfair Display',serif;font-size:0.74rem;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px;}
 .line-text{font-family:'IM Fell English',serif;font-size:1.02rem;line-height:1.7;color:var(--cream);}
-.line-text.stage-direction{font-style:italic;color:var(--muted);font-family:'Cormorant Garamond',serif;font-size:0.91rem;}
+.line-text.stage-action{font-weight:700;color:var(--gold2);font-family:'Cormorant Garamond',serif;font-size:0.95rem;}
+.line-text.stage-description{font-style:italic;color:#7aadcc;font-family:'Cormorant Garamond',serif;font-size:0.93rem;}
+.line-text.coro-text{color:#b090d8;}
 .skip-badge{display:inline-block;font-size:0.67rem;background:rgba(139,26,46,0.25);color:var(--crimson2);border-radius:3px;padding:1px 5px;margin-left:7px;font-style:normal;font-family:'Cormorant Garamond',serif;}
+.coro-voices{font-size:0.7rem;color:rgba(176,144,216,0.6);margin-top:3px;font-style:italic;}
+
 .player-controls{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(to top,var(--bg) 75%,transparent);padding:14px 20px 26px;z-index:10;}
 .progress-bar-wrap{height:2px;background:rgba(201,168,76,0.12);border-radius:2px;margin-bottom:13px;cursor:pointer;}
 .progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:2px;transition:width 0.3s;pointer-events:none;}
@@ -208,7 +226,7 @@ select:focus{outline:none;border-color:var(--gold);}
 </div>
 <div id="toast"></div>
 
-<!-- ══════════════ HOME ══════════════ -->
+<!-- HOME -->
 <div class="screen" id="screen-home">
   <header>
     <div class="logo">Palcoscenico <span>Lettore Teatrale</span></div>
@@ -219,7 +237,6 @@ select:focus{outline:none;border-color:var(--gold);}
     <div class="home-sub">Carica lo script. Ascolta ogni voce.</div>
     <div class="curtain-divider"></div>
 
-    <!-- SAVED SCRIPT (shown when script exists in Firebase) -->
     <div class="saved-script-card" id="savedScriptCard" style="display:none;">
       <div class="saved-script-header">
         <div class="saved-script-icon">📜</div>
@@ -229,41 +246,50 @@ select:focus{outline:none;border-color:var(--gold);}
         </div>
       </div>
       <div class="saved-script-actions">
-        <button class="script-action-btn primary" onclick="openSavedScript()">
-          ▶ Apri il copione
-        </button>
-        <button class="script-action-btn secondary" onclick="showUploadNew()">
-          ↑ Carica nuovo
-        </button>
+        <button class="script-action-btn primary" onclick="openSavedScript()">▶ Apri il copione</button>
+        <button class="script-action-btn secondary" onclick="showUploadNew()">↑ Carica nuovo</button>
       </div>
     </div>
 
-    <!-- UPLOAD NEW (shown when no script, or "Carica nuovo" clicked) -->
     <div id="uploadSection" style="width:100%;max-width:400px;display:none;">
       <div class="upload-zone" id="dropZone">
-        <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt" onchange="handleFile(this.files[0])">
+        <input type="file" id="fileInput" accept=".docx,.doc" onchange="handleFile(this.files[0])">
         <div class="upload-icon">📜</div>
         <span class="upload-label">Carica il copione</span>
-        <div class="upload-hint">PDF · Word (.docx) · Testo semplice</div>
+        <div class="upload-hint">Word (.docx) — con formattazione grassetto/corsivo</div>
       </div>
       <button class="demo-btn" onclick="loadDemo()">→ Carica script di esempio</button>
     </div>
 
-    <!-- SYNC STATUS -->
+    <!-- FORMAT LEGEND -->
+    <div class="format-legend" id="formatLegend" style="display:none;">
+      <div class="format-legend-title">📋 Come formattare il copione in Word</div>
+      <div class="legend-row">
+        <div class="legend-sample normal">NOME: testo</div>
+        <div class="legend-desc">Testo normale → dialogo del personaggio</div>
+      </div>
+      <div class="legend-row">
+        <div class="legend-sample bold">NOME: testo</div>
+        <div class="legend-desc"><strong>Grassetto</strong> → azione di scena</div>
+      </div>
+      <div class="legend-row">
+        <div class="legend-sample italic">NOME: testo</div>
+        <div class="legend-desc"><em>Corsivo</em> → descrizione ambientale</div>
+      </div>
+      <div class="legend-row">
+        <div class="legend-sample coro">TUTTI: testo</div>
+        <div class="legend-desc">TUTTI: → coro, letto da più voci</div>
+      </div>
+    </div>
+
     <div class="sync-bar">
       <div class="sync-dot loading" id="syncDot"></div>
       <span id="syncLabel">Connessione al database…</span>
     </div>
-
-    <div class="tip-box">
-      <strong>🎭 Formato consigliato</strong>
-      <span style="color:var(--gold2)">NOME:</span> battuta di dialogo<br>
-      <span style="color:var(--gold2)">[Indicazione di scena]</span> o <em>(azione)</em>
-    </div>
   </div>
 </div>
 
-<!-- ══════════════ SETTINGS ══════════════ -->
+<!-- SETTINGS -->
 <div class="screen" id="screen-settings">
   <header>
     <div class="logo">Impostazioni</div>
@@ -293,16 +319,28 @@ select:focus{outline:none;border-color:var(--gold);}
       <div class="section-title">Voce & lettura</div>
       <div class="toggle-row">
         <div>
-          <div class="toggle-label">Leggi indicazioni di scena</div>
-          <div class="toggle-desc">Azioni tra [parentesi] o (parentesi)</div>
+          <div class="toggle-label">Leggi azioni di scena</div>
+          <div class="toggle-desc">Testo in grassetto nel copione</div>
         </div>
-        <label class="toggle"><input type="checkbox" id="readStageDirections" checked><span class="toggle-slider"></span></label>
+        <label class="toggle"><input type="checkbox" id="readActions" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Leggi descrizioni ambientali</div>
+          <div class="toggle-desc">Testo in corsivo nel copione</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="readDescriptions" checked><span class="toggle-slider"></span></label>
       </div>
       <div style="height:14px;"></div>
-      <label class="field-label">Voce narratore / indicazioni di scena</label>
+      <label class="field-label">Voce azioni (grassetto)</label>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+        <select id="actionVoiceSelect" style="flex:1;"></select>
+        <button class="preview-btn" onclick="previewSpecialVoice('action')" title="Anteprima">▶</button>
+      </div>
+      <label class="field-label">Voce descrizioni (corsivo)</label>
       <div style="display:flex;gap:8px;align-items:center;">
-        <select id="stageVoiceSelect" style="flex:1;"></select>
-        <button class="preview-btn" id="previewStageBtn" onclick="previewStageVoice()" title="Anteprima">▶</button>
+        <select id="descVoiceSelect" style="flex:1;"></select>
+        <button class="preview-btn" onclick="previewSpecialVoice('desc')" title="Anteprima">▶</button>
       </div>
     </div>
 
@@ -314,7 +352,7 @@ select:focus{outline:none;border-color:var(--gold);}
       </div>
       <button class="btn-save-shared" id="saveSharedBtn" onclick="saveSharedData()" style="display:none;">
         <span id="saveSharedIcon">☁️</span>
-        <span id="saveSharedLabel">Salva voci per tutto il gruppo</span>
+        <span id="saveSharedLabel">Salva per tutto il gruppo</span>
       </button>
     </div>
 
@@ -323,7 +361,7 @@ select:focus{outline:none;border-color:var(--gold);}
   </div>
 </div>
 
-<!-- ══════════════ PLAYER ══════════════ -->
+<!-- PLAYER -->
 <div class="screen" id="screen-player">
   <div class="player-header">
     <div class="play-title" id="playerTitle">Copione</div>
@@ -366,6 +404,13 @@ const EL_MODEL='eleven_multilingual_v2';
 const SHARED_DOC='shared-data';
 const ROLE_COLORS=['#c9a84c','#8b9fd4','#6dbf9e','#d4826d','#b58fd4','#d4c26d','#6db5d4','#d46d9e'];
 
+/* Line types:
+   'dialogue'    — testo normale, personaggio parla
+   'action'      — grassetto, azione fisica di scena
+   'description' — corsivo, descrizione ambientale
+   'coro'        — TUTTI:, letto da più voci in sequenza
+*/
+
 const VOICES=[
   {id:'pNInz6obpgDQGcFmaJgB',name:'Adam',    g:'M',age:'adulto', tone:'grave',style:['autorevole','serio']},
   {id:'nPczCjzI2devNBz1zQrb',name:'Brian',   g:'M',age:'adulto', tone:'medio',style:['naturale','neutro']},
@@ -391,18 +436,22 @@ const VOICES=[
   {id:'oWAxZDx7w5VEj9dCyTzz',name:'Grace',   g:'F',age:'anziana',tone:'medio',style:['calma','saggia']},
   {id:'ThT5KcBeYPX3keUQqHPh',name:'Dorothy', g:'F',age:'giovane',tone:'medio',style:['giovane','fragile']},
 ];
-const STAGE_VOICE_ID=VOICES.find(v=>v.name==='Aria').id;
 
-/* ══ STATE ══ */
-let lines=[],roles=[],roleColors={};
-let roleVoiceId={},roleFilters={};
-let stageVoiceId=STAGE_VOICE_ID;
-let myChar='',readMyLines=true,readStageDirections=true;
+// Default special voices
+const DEFAULT_ACTION_VOICE = VOICES.find(v=>v.name==='George').id;   // grave autorevole
+const DEFAULT_DESC_VOICE   = VOICES.find(v=>v.name==='Grace').id;    // calma descrittiva
+
+let lines=[], roles=[], roleColors={};
+let roleVoiceId={}, roleFilters={};
+let actionVoiceId=DEFAULT_ACTION_VOICE;
+let descVoiceId=DEFAULT_DESC_VOICE;
+let myChar='', readMyLines=true, readActions=true, readDescriptions=true;
 let speechRate=1.0;
-let currentLine=0,isPlaying=false;
+let currentLine=0, isPlaying=false;
 let fileName='Copione';
-let currentAudio=null,activePreviewBtn=null;
+let currentAudio=null, activePreviewBtn=null;
 let fbReady=false;
+let coroVoiceQueue=[];  // voices to use for TUTTI lines
 
 /* ══ FIREBASE ══ */
 function setSyncStatus(state,label){
@@ -413,75 +462,31 @@ function setSyncStatus(state,label){
 async function initFirebase(){
   if(!window._firebaseReady){window.addEventListener('firebase-ready',initFirebase);return;}
   fbReady=true;
-  setSyncStatus('loading','Caricamento copione e voci…');
+  setSyncStatus('loading','Caricamento copione…');
   try{
     const snap=await window._getDoc(window._fbDoc(SHARED_DOC));
-    if(snap.exists()){
-      const data=snap.data();
-      // Restore script
-      if(data.lines && data.lines.length){
-        lines=data.lines;
-        roles=data.roles||[];
-        roleColors=data.roleColors||{};
-        fileName=data.fileName||'Copione';
-        document.getElementById('playerTitle').textContent=fileName;
-      }
-      // Restore voices
-      if(data.roleVoiceId) roleVoiceId=data.roleVoiceId;
-      if(data.roleFilters) roleFilters=data.roleFilters;
-      if(data.stageVoiceId) stageVoiceId=data.stageVoiceId;
-    }
-    // Setup realtime listener for voice/script changes
-    window._onSnapshot(window._fbDoc(SHARED_DOC),(snap)=>{
-      if(!snap.exists())return;
-      const data=snap.data();
-      if(data.roleVoiceId) roleVoiceId=Object.assign({},data.roleVoiceId);
-      if(data.roleFilters) roleFilters=Object.assign({},data.roleFilters);
-      if(data.stageVoiceId) stageVoiceId=data.stageVoiceId;
-      if(data.lines&&data.lines.length){
-        lines=data.lines; roles=data.roles||[]; roleColors=data.roleColors||{};
-        fileName=data.fileName||'Copione';
-        document.getElementById('playerTitle').textContent=fileName;
-      }
-      setSyncStatus('ok','☁️ Sincronizzato con il gruppo');
-      updateHomeUI();
-      populateMyCharSelect();
-      if(document.getElementById('screen-settings').classList.contains('active'))buildRoleVoiceUI();
-    });
-    setSyncStatus('ok', lines.length ? '☁️ Copione e voci caricati' : '☁️ Database connesso');
-  }catch(e){
-    setSyncStatus('err','⚠ Errore: '+e.message);
-  }
+    if(snap.exists()) applySharedData(snap.data());
+    window._onSnapshot(window._fbDoc(SHARED_DOC),(s)=>{
+      if(s.exists()){applySharedData(s.data());setSyncStatus('ok','☁️ Sincronizzato');}
+    },(e)=>setSyncStatus('err','⚠ '+e.message));
+    setSyncStatus('ok', lines.length?'☁️ Copione caricato':'☁️ Database connesso');
+  }catch(e){setSyncStatus('err','⚠ Errore: '+e.message);}
   updateHomeUI();
   populateMyCharSelect();
   hideLoading();
   showScreen('screen-home');
 }
 
-function updateHomeUI(){
-  const card=document.getElementById('savedScriptCard');
-  const upload=document.getElementById('uploadSection');
-  if(lines.length){
-    card.style.display='block';
-    upload.style.display='none';
-    document.getElementById('savedScriptTitle').textContent=fileName;
-    const roleCount=roles.length;
-    document.getElementById('savedScriptMeta').textContent=
-      roleCount+' personaggi · '+lines.length+' battute';
-  } else {
-    card.style.display='none';
-    upload.style.display='block';
-  }
-}
-
-function showUploadNew(){
-  document.getElementById('savedScriptCard').style.display='none';
-  document.getElementById('uploadSection').style.display='block';
-}
-
-function openSavedScript(){
-  renderScript();
-  showScreen('screen-player');
+function applySharedData(data){
+  if(data.lines?.length){lines=data.lines;roles=data.roles||[];roleColors=data.roleColors||{};fileName=data.fileName||'Copione';document.getElementById('playerTitle').textContent=fileName;}
+  if(data.roleVoiceId) roleVoiceId=Object.assign({},data.roleVoiceId);
+  if(data.roleFilters) roleFilters=Object.assign({},data.roleFilters);
+  if(data.actionVoiceId) actionVoiceId=data.actionVoiceId;
+  if(data.descVoiceId) descVoiceId=data.descVoiceId;
+  buildCoroQueue();
+  updateHomeUI();
+  populateMyCharSelect();
+  if(document.getElementById('screen-settings').classList.contains('active')) buildRoleVoiceUI();
 }
 
 async function saveSharedData(){
@@ -489,32 +494,31 @@ async function saveSharedData(){
   const btn=document.getElementById('saveSharedBtn');
   const lbl=document.getElementById('saveSharedLabel');
   const ico=document.getElementById('saveSharedIcon');
-  btn.classList.add('saving');
-  lbl.textContent='Salvataggio in corso…';
-  ico.textContent='⏳';
-  stageVoiceId=document.getElementById('stageVoiceSelect').value||STAGE_VOICE_ID;
+  btn.classList.add('saving'); lbl.textContent='Salvataggio…'; ico.textContent='⏳';
+  actionVoiceId=document.getElementById('actionVoiceSelect')?.value||DEFAULT_ACTION_VOICE;
+  descVoiceId=document.getElementById('descVoiceSelect')?.value||DEFAULT_DESC_VOICE;
   try{
     await window._setDoc(window._fbDoc(SHARED_DOC),{
-      lines, roles, roleColors, fileName,
-      roleVoiceId, roleFilters, stageVoiceId,
+      lines,roles,roleColors,fileName,
+      roleVoiceId,roleFilters,
+      actionVoiceId,descVoiceId,
       updatedAt:new Date().toISOString()
     });
-    lbl.textContent='✓ Salvato per tutto il gruppo!';
-    ico.textContent='✅';
-    setTimeout(()=>{
-      lbl.textContent='Salva voci per tutto il gruppo';
-      ico.textContent='☁️';
-      btn.classList.remove('saving');
-    },2500);
-  }catch(e){
-    lbl.textContent='Errore: '+e.message;
-    ico.textContent='⚠';
-    btn.classList.remove('saving');
-  }
+    lbl.textContent='✓ Salvato per tutto il gruppo!'; ico.textContent='✅';
+    setTimeout(()=>{lbl.textContent='Salva per tutto il gruppo';ico.textContent='☁️';btn.classList.remove('saving');},2500);
+  }catch(e){lbl.textContent='Errore: '+e.message;ico.textContent='⚠';btn.classList.remove('saving');}
 }
 
 window.addEventListener('firebase-ready',initFirebase);
 setTimeout(initFirebase,300);
+
+/* ══ CORO QUEUE ══ */
+function buildCoroQueue(){
+  // Use up to 4 different role voices for coro, cycling through them
+  const ids=Object.values(roleVoiceId).filter(Boolean);
+  const unique=[...new Set(ids)];
+  coroVoiceQueue=unique.length>=2 ? unique.slice(0,4) : [VOICES[0].id, VOICES[14].id];
+}
 
 /* ══ NAVIGATION ══ */
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);}
@@ -524,58 +528,94 @@ function goSettings(){stopAudio();isPlaying=false;updatePlayBtn();buildRoleVoice
 function saveAndPlay(){
   myChar=document.getElementById('myCharSelect').value;
   readMyLines=document.getElementById('readMyLines').checked;
-  readStageDirections=document.getElementById('readStageDirections').checked;
-  stageVoiceId=document.getElementById('stageVoiceSelect').value||STAGE_VOICE_ID;
+  readActions=document.getElementById('readActions').checked;
+  readDescriptions=document.getElementById('readDescriptions').checked;
+  actionVoiceId=document.getElementById('actionVoiceSelect')?.value||DEFAULT_ACTION_VOICE;
+  descVoiceId=document.getElementById('descVoiceSelect')?.value||DEFAULT_DESC_VOICE;
   localStorage.setItem('myChar',myChar);
   localStorage.setItem('readMyLines',readMyLines);
   showScreen('screen-player');
   renderScript();
-  if(!isPlaying)startPlaying();
+  if(!isPlaying) startPlaying();
 }
+
+/* ══ HOME UI ══ */
+function updateHomeUI(){
+  const card=document.getElementById('savedScriptCard');
+  const upload=document.getElementById('uploadSection');
+  const legend=document.getElementById('formatLegend');
+  if(lines.length){
+    card.style.display='block'; upload.style.display='none'; legend.style.display='none';
+    document.getElementById('savedScriptTitle').textContent=fileName;
+    const actions=lines.filter(l=>l.type==='action').length;
+    const descs=lines.filter(l=>l.type==='description').length;
+    const coros=lines.filter(l=>l.type==='coro').length;
+    let meta=roles.length+' personaggi · '+lines.length+' righe';
+    if(coros) meta+=' · '+coros+' coro';
+    document.getElementById('savedScriptMeta').textContent=meta;
+  }else{
+    card.style.display='none'; upload.style.display='block'; legend.style.display='block';
+  }
+}
+function showUploadNew(){
+  document.getElementById('savedScriptCard').style.display='none';
+  document.getElementById('uploadSection').style.display='block';
+  document.getElementById('formatLegend').style.display='block';
+}
+function openSavedScript(){renderScript();showScreen('screen-player');}
 
 /* ══ SETTINGS UI ══ */
 function populateMyCharSelect(){
   const sel=document.getElementById('myCharSelect');
   const saved=localStorage.getItem('myChar')||'';
-  sel.innerHTML='<option value="">— Nessuno (spettatore) —</option>'+roles.map(r=>`<option value="${r}">${r}</option>`).join('');
+  sel.innerHTML='<option value="">— Nessuno (spettatore) —</option>'+
+    roles.map(r=>`<option value="${r}">${r}</option>`).join('');
   if(saved&&roles.includes(saved)){sel.value=saved;myChar=saved;}
-  const savedRead=localStorage.getItem('readMyLines');
-  if(savedRead!==null)document.getElementById('readMyLines').checked=savedRead==='true';
+  const sr=localStorage.getItem('readMyLines');
+  if(sr!==null) document.getElementById('readMyLines').checked=sr==='true';
   updateMyChar();
 }
 function updateMyChar(){
   myChar=document.getElementById('myCharSelect').value;
   document.getElementById('myCharOptions').style.display=myChar?'block':'none';
 }
-function buildStageVoiceSelect(){
-  document.getElementById('stageVoiceSelect').innerHTML=VOICES.map(v=>
-    `<option value="${v.id}" ${v.id===stageVoiceId?'selected':''}>${v.g==='F'?'♀':'♂'} ${v.name} — ${v.style[0]}</option>`
-  ).join('');
+
+function buildSpecialVoiceSelects(){
+  const opts=VOICES.map(v=>`<option value="${v.id}">${v.g==='F'?'♀':'♂'} ${v.name} — ${v.style[0]}</option>`).join('');
+  const as=document.getElementById('actionVoiceSelect');
+  const ds=document.getElementById('descVoiceSelect');
+  if(as){as.innerHTML=opts; as.value=actionVoiceId;}
+  if(ds){ds.innerHTML=opts; ds.value=descVoiceId;}
 }
+
 function buildRoleVoiceUI(){
-  buildStageVoiceSelect();
+  buildSpecialVoiceSelects();
   const container=document.getElementById('roleVoiceList');
   const saveBtn=document.getElementById('saveSharedBtn');
   if(!roles.length){
     container.innerHTML='<div style="color:var(--muted);font-style:italic;font-size:0.88rem;">Nessun copione caricato.</div>';
-    if(saveBtn)saveBtn.style.display='none';
+    if(saveBtn) saveBtn.style.display='none';
     return;
   }
-  if(saveBtn)saveBtn.style.display='flex';
+  if(saveBtn) saveBtn.style.display='flex';
+
   container.innerHTML=roles.map((r,ri)=>{
     const isMe=r===myChar;
+    const isCoro=r==='TUTTI';
     const color=roleColors[r]||'#c9a84c';
     const f=roleFilters[r]||{g:null,age:null,tone:null,style:null};
     const curVoice=VOICES.find(v=>v.id===roleVoiceId[r])||VOICES[ri%VOICES.length];
     return `
-    <div class="role-card ${isMe?'my-char-card':''}" id="rolecard-${ri}">
+    <div class="role-card ${isMe?'my-char-card':''} ${isCoro?'coro-card':''}" id="rolecard-${ri}">
       <div class="role-card-header">
         <div class="role-name-display"><span class="color-swatch" style="background:${color}"></span>${r}</div>
         <div style="display:flex;gap:6px;align-items:center;">
           ${isMe?'<span class="my-char-badge">tu</span>':''}
+          ${isCoro?'<span class="coro-badge">🎭 coro</span>':''}
           <button class="preview-btn" id="prevbtn-${ri}" onclick="previewRoleVoice('${r}',${ri})">▶</button>
         </div>
       </div>
+      ${isCoro?`<div style="font-size:0.8rem;color:var(--muted);font-style:italic;margin-bottom:10px;">La battuta verrà letta in sequenza da più voci dei personaggi presenti nel copione.</div>`:''}
       <div class="picker-label">Genere</div>
       <div class="pill-group">
         <span class="pill ${!f.g?'active':''}" onclick="setFilter('${r}','g',null,${ri})">Qualsiasi</span>
@@ -620,38 +660,302 @@ function buildRoleVoiceUI(){
 }
 
 function setFilter(role,key,value,ri){
-  if(!roleFilters[role])roleFilters[role]={g:null,age:null,tone:null,style:null};
+  if(!roleFilters[role]) roleFilters[role]={g:null,age:null,tone:null,style:null};
   roleFilters[role][key]=value;
   const f=roleFilters[role];
   const ageV=f.age?[f.age,f.age==='adulto'?'adulta':f.age==='anziano'?'anziana':f.age]:null;
   const matches=VOICES.filter(v=>{
-    if(f.g&&v.g!==f.g)return false;
-    if(ageV&&!ageV.includes(v.age))return false;
-    if(f.tone&&v.tone!==f.tone)return false;
-    if(f.style&&!v.style.includes(f.style))return false;
+    if(f.g&&v.g!==f.g) return false;
+    if(ageV&&!ageV.includes(v.age)) return false;
+    if(f.tone&&v.tone!==f.tone) return false;
+    if(f.style&&!v.style.includes(f.style)) return false;
     return true;
   });
   const picked=matches[0]||VOICES[0];
   roleVoiceId[role]=picked.id;
+  buildCoroQueue();
   const res=document.getElementById('voiceresult-'+ri);
-  if(res)res.innerHTML=`<div><div class="voice-result-name">${picked.g==='F'?'♀':'♂'} ${picked.name}</div><div class="voice-result-desc">${picked.age} · ${picked.tone} · ${picked.style.join(', ')}</div></div><button class="preview-btn" onclick="previewRoleVoice('${role}',${ri})">▶</button>`;
+  if(res) res.innerHTML=`<div><div class="voice-result-name">${picked.g==='F'?'♀':'♂'} ${picked.name}</div><div class="voice-result-desc">${picked.age} · ${picked.tone} · ${picked.style.join(', ')}</div></div><button class="preview-btn" onclick="previewRoleVoice('${role}',${ri})">▶</button>`;
   buildRoleVoiceUI();
 }
 
 /* ══ PREVIEW ══ */
-async function previewRoleVoice(role,ri){await doPreview(roleVoiceId[role]||VOICES[0].id,document.getElementById('prevbtn-'+ri),'Ciao, questa è la mia voce per il teatro.');}
-async function previewStageVoice(){await doPreview(document.getElementById('stageVoiceSelect').value||STAGE_VOICE_ID,document.getElementById('previewStageBtn'),'Atto primo. Il sipario si apre lentamente.');}
+async function previewRoleVoice(role,ri){
+  await doPreview(roleVoiceId[role]||VOICES[0].id, document.getElementById('prevbtn-'+ri), 'Ciao, questa è la mia voce per il teatro.');
+}
+async function previewSpecialVoice(type){
+  const id = type==='action'
+    ? (document.getElementById('actionVoiceSelect')?.value||DEFAULT_ACTION_VOICE)
+    : (document.getElementById('descVoiceSelect')?.value||DEFAULT_DESC_VOICE);
+  const btn = type==='action'
+    ? document.querySelectorAll('.preview-btn')[0]
+    : document.querySelectorAll('.preview-btn')[1];
+  const txt = type==='action'
+    ? 'Entra in scena con passo deciso e si avvicina alla finestra.'
+    : 'La luce del tramonto filtrava tra le tende rosse del palazzo.';
+  await doPreview(id, btn, txt);
+}
 async function doPreview(voiceId,btn,text){
   stopAudio();
   document.querySelectorAll('.preview-btn').forEach(b=>b.classList.remove('playing'));
   if(activePreviewBtn===btn){activePreviewBtn=null;return;}
-  btn.classList.add('playing');activePreviewBtn=btn;
+  btn.classList.add('playing'); activePreviewBtn=btn;
   try{
     const audio=await fetchEL(text,voiceId);
     currentAudio=audio;
     audio.onended=()=>{btn.classList.remove('playing');if(activePreviewBtn===btn)activePreviewBtn=null;currentAudio=null;};
     audio.play();
   }catch(e){btn.classList.remove('playing');showToast('Errore: '+e.message);}
+}
+
+/* ══ DOCX PARSING with formatting ══ */
+function handleFile(file){
+  if(!file) return;
+  fileName=file.name.replace(/\.[^.]+$/,'');
+  document.getElementById('playerTitle').textContent=fileName;
+  showLoading('Analisi del copione Word…');
+  parseDOCX(file);
+}
+
+function parseDOCX(file){
+  const r=new FileReader();
+  r.onload=e=>{
+    // Use mammoth with raw HTML to preserve bold/italic
+    mammoth.convertToHtml({arrayBuffer:e.target.result})
+      .then(result=>processHTML(result.value))
+      .catch(err=>{hideLoading();showToast('Errore DOCX: '+err.message);});
+  };
+  r.readAsArrayBuffer(file);
+}
+
+function processHTML(html){
+  lines=[];roles=[];roleColors={};roleVoiceId={};roleFilters={};
+
+  const parser=new DOMParser();
+  const doc=parser.parseFromString(html,'text/html');
+  const paragraphs=doc.querySelectorAll('p');
+
+  paragraphs.forEach(p=>{
+    const rawText=p.textContent.trim();
+    if(!rawText) return;
+
+    // Detect formatting: check if ALL text content is bold or italic
+    const allNodes=Array.from(p.childNodes).filter(n=>n.textContent.trim());
+    const isBold=allNodes.length>0 && allNodes.every(n=>{
+      if(n.nodeType===3) return false; // plain text node = not bold
+      const tag=n.nodeName.toLowerCase();
+      return tag==='strong'||tag==='b'||(n.querySelector&&(n.querySelector('strong,b')!==null));
+    });
+    const isItalic=!isBold && allNodes.length>0 && allNodes.every(n=>{
+      if(n.nodeType===3) return false;
+      const tag=n.nodeName.toLowerCase();
+      return tag==='em'||tag==='i'||(n.querySelector&&(n.querySelector('em,i')!==null));
+    });
+
+    // Check for TUTTI:
+    const tuttiMatch=rawText.match(/^TUTTI\s*[:：]\s*(.+)$/i);
+    if(tuttiMatch){
+      if(!roles.includes('TUTTI')){roles.push('TUTTI');roleColors['TUTTI']='#b090d8';}
+      lines.push({type:'coro',speaker:'TUTTI',text:tuttiMatch[1].trim()});
+      return;
+    }
+
+    // Check for dialogue pattern: NOME: testo
+    const dialogueMatch=rawText.match(/^([A-ZÀ-Ý][A-Za-zÀ-ÿ\s\.]{0,30}):\s*(.+)$/);
+    if(dialogueMatch){
+      const speaker=dialogueMatch[1].trim();
+      const text=dialogueMatch[2].trim();
+      if(!roles.includes(speaker)){roles.push(speaker);roleColors[speaker]=ROLE_COLORS[(roles.length-1)%ROLE_COLORS.length];}
+      // Even dialogue can be bold (action spoken) or italic (whispered)
+      const type=isBold?'action':isItalic?'description':'dialogue';
+      lines.push({type, speaker, text});
+      return;
+    }
+
+    // No speaker match — pure stage direction
+    if(isBold){
+      lines.push({type:'action',speaker:'Scena',text:rawText});
+    } else if(isItalic){
+      lines.push({type:'description',speaker:'Scena',text:rawText});
+    } else {
+      // Normal text without speaker — treat as description
+      lines.push({type:'description',speaker:'Scena',text:rawText});
+    }
+  });
+
+  // Assign voices
+  roles.forEach((r,ri)=>{
+    if(r==='TUTTI'){roleVoiceId[r]=VOICES[0].id;return;}
+    roleFilters[r]={g:ri%2===0?'M':'F',age:null,tone:null,style:null};
+    const pool=VOICES.filter(v=>v.g===(ri%2===0?'M':'F'));
+    roleVoiceId[r]=(pool[ri%pool.length]||VOICES[0]).id;
+  });
+  buildCoroQueue();
+
+  hideLoading();
+  updateHomeUI();
+  populateMyCharSelect();
+  buildRoleVoiceUI();
+  renderScript();
+  saveSharedData();
+  showScreen('screen-settings');
+}
+
+/* ══ DEMO ══ */
+function loadDemo(){
+  // Demo uses plain text fallback
+  fileName='Demo — Amleto';
+  document.getElementById('playerTitle').textContent=fileName;
+  showLoading('Caricamento demo…');
+  // Manually build lines for demo
+  lines=[
+    {type:'description',speaker:'Scena',text:'Atto Primo — Un castello medievale. Notte fonda. Il vento soffia tra le torri.'},
+    {type:'action',speaker:'Scena',text:'Il fantasma appare tra i merli, avvolto in un mantello spettrale.'},
+    {type:'dialogue',speaker:'AMLETO',text:'Essere o non essere, questo è il dilemma. Se sia più nobile sopportare i colpi dell\'oltraggioso destino.'},
+    {type:'dialogue',speaker:'ORAZIO',text:'Mio principe, vi attende il fantasma di vostro padre sui bastioni.'},
+    {type:'dialogue',speaker:'AMLETO',text:'Un fantasma? Nel cuore della notte? Andiamo a vederlo.'},
+    {type:'action',speaker:'Scena',text:'Orazio e Amleto si avviano verso i bastioni.'},
+    {type:'dialogue',speaker:'FANTASMA',text:'Figlio mio. Io fui assassinato dal tuo zio Claudio mentre dormivo nel mio giardino.'},
+    {type:'dialogue',speaker:'AMLETO',text:'Assassinato? Oh, cielo e terra! Non soffrirò questo oltraggio!'},
+    {type:'dialogue',speaker:'FANTASMA',text:'Vendica la mia ignominiosa e innaturale morte. Addio, addio. Ricordami.'},
+    {type:'action',speaker:'Scena',text:'Il fantasma svanisce lentamente nell\'ombra.'},
+    {type:'coro',speaker:'TUTTI',text:'Tutto ciò che è segreto, alla fine viene alla luce.'},
+    {type:'dialogue',speaker:'AMLETO',text:'O terra che tremi! Dovrò sorridere e fare il malvagio?'},
+    {type:'dialogue',speaker:'ORAZIO',text:'Mio principe, state bene? Sembrate sconvolto.'},
+    {type:'dialogue',speaker:'AMLETO',text:'Sì, benissimo, amico mio. Giurate il silenzio su tutto ciò che avete visto.'},
+  ];
+  roles=['AMLETO','ORAZIO','FANTASMA','TUTTI'];
+  roleColors={AMLETO:'#c9a84c',ORAZIO:'#8b9fd4',FANTASMA:'#d4826d',TUTTI:'#b090d8'};
+  roleVoiceId={
+    AMLETO:VOICES.find(v=>v.name==='Callum').id,
+    ORAZIO:VOICES.find(v=>v.name==='Daniel').id,
+    FANTASMA:VOICES.find(v=>v.name==='George').id,
+    TUTTI:VOICES[0].id
+  };
+  roleFilters={AMLETO:{g:'M',age:'giovane',tone:'medio',style:'drammatico'},ORAZIO:{g:'M',age:'adulto',tone:'medio',style:'elegante'},FANTASMA:{g:'M',age:'anziano',tone:'grave',style:'autorevole'}};
+  buildCoroQueue();
+  hideLoading();
+  updateHomeUI();
+  populateMyCharSelect();
+  buildRoleVoiceUI();
+  renderScript();
+  saveSharedData();
+  showScreen('screen-settings');
+}
+
+/* ══ RENDER ══ */
+function renderScript(){
+  const c=document.getElementById('scriptContainer');
+  if(!lines.length){c.innerHTML='<div style="text-align:center;padding:60px;color:var(--muted);font-style:italic;">Nessuna riga trovata.</div>';return;}
+  c.innerHTML=lines.map((line,i)=>{
+    const isMe=line.type==='dialogue'&&line.speaker===myChar;
+    const skipped=isMe&&!readMyLines;
+    let speakerColor=roleColors[line.speaker]||'var(--muted)';
+    let blockClass='line-block';
+    let textClass='line-text';
+    let speakerLabel='';
+
+    if(line.type==='action'){
+      blockClass+=' type-action';
+      textClass+=' stage-action';
+      speakerLabel=line.speaker==='Scena'?'【 Azione 】':'【 '+line.speaker+' — Azione 】';
+    } else if(line.type==='description'){
+      blockClass+=' type-description';
+      textClass+=' stage-description';
+      speakerLabel=line.speaker==='Scena'?'【 Scena 】':'【 '+line.speaker+' — Scena 】';
+    } else if(line.type==='coro'){
+      blockClass+=' type-coro';
+      textClass+=' coro-text';
+      speakerLabel='🎭 TUTTI';
+      speakerColor='#b090d8';
+    } else {
+      // dialogue
+      blockClass+=isMe?' my-line':'';
+      speakerLabel=line.speaker+(skipped?'<span class="skip-badge">saltata</span>':'');
+    }
+
+    return `<div class="${blockClass} ${skipped?'skipped':''}" id="line-${i}" onclick="jumpToLine(${i})">
+      <div class="line-speaker" style="color:${speakerColor}">${speakerLabel}</div>
+      <div class="${textClass}">${line.text}</div>
+      ${line.type==='coro'?`<div class="coro-voices">letta da ${Math.min(coroVoiceQueue.length,4)} voci in sequenza</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+/* ══ PLAYBACK ══ */
+function stopAudio(){if(currentAudio){currentAudio.pause();currentAudio=null;}setBuffering(false);}
+function setBuffering(b){document.getElementById('bufferingRing').classList.toggle('active',b);}
+function startPlaying(){isPlaying=true;updatePlayBtn();speakLine(currentLine);}
+
+async function speakLine(idx){
+  if(idx>=lines.length){isPlaying=false;updatePlayBtn();showToast('Copione terminato 🎭');return;}
+  currentLine=idx; updateActiveBlock(); updateProgress();
+  const line=lines[idx];
+  const isMe=line.type==='dialogue'&&line.speaker===myChar;
+
+  if(line.type==='action'&&!readActions) return speakLine(idx+1);
+  if(line.type==='description'&&!readDescriptions) return speakLine(idx+1);
+  if(isMe&&!readMyLines) return setTimeout(()=>speakLine(idx+1),200);
+
+  // Speaker label
+  const labels={action:'【 Azione 】',description:'【 Scena 】',coro:'🎭 TUTTI — coro',dialogue:line.speaker};
+  document.getElementById('currentSpeakerLabel').textContent=labels[line.type]||line.speaker;
+
+  if(line.type==='coro'){
+    await speakCoro(line.text, idx);
+    return;
+  }
+
+  const voiceId = line.type==='action' ? actionVoiceId
+                : line.type==='description' ? descVoiceId
+                : (roleVoiceId[line.speaker]||VOICES[0].id);
+
+  setBuffering(true);
+  try{
+    if(!isPlaying){setBuffering(false);return;}
+    const audio=await fetchEL(line.text,voiceId);
+    if(!isPlaying){setBuffering(false);return;}
+    setBuffering(false); currentAudio=audio;
+    audio.onended=()=>{currentAudio=null;if(isPlaying)speakLine(idx+1);};
+    audio.onerror=()=>{currentAudio=null;if(isPlaying)speakLine(idx+1);};
+    audio.play();
+  }catch(e){
+    setBuffering(false); showToast('⚠ '+e.message);
+    if(isPlaying) setTimeout(()=>speakLine(idx+1),1500);
+  }
+}
+
+/* CORO — play same text with multiple voices in sequence */
+async function speakCoro(text, lineIdx){
+  if(!coroVoiceQueue.length){return speakLine(lineIdx+1);}
+  const voicesToUse=coroVoiceQueue.slice(0,Math.min(4,coroVoiceQueue.length));
+  
+  async function playNext(i){
+    if(!isPlaying||i>=voicesToUse.length){
+      currentAudio=null;
+      if(isPlaying) speakLine(lineIdx+1);
+      return;
+    }
+    const vname=VOICES.find(v=>v.id===voicesToUse[i])?.name||'';
+    document.getElementById('currentSpeakerLabel').textContent=`🎭 TUTTI (${i+1}/${voicesToUse.length} — ${vname})`;
+    setBuffering(true);
+    try{
+      const audio=await fetchEL(text,voicesToUse[i]);
+      if(!isPlaying){setBuffering(false);return;}
+      setBuffering(false); currentAudio=audio;
+      audio.onended=()=>{
+        currentAudio=null;
+        // Small pause between coro voices
+        setTimeout(()=>playNext(i+1), 300);
+      };
+      audio.onerror=()=>{currentAudio=null;playNext(i+1);};
+      audio.play();
+    }catch(e){
+      setBuffering(false);
+      playNext(i+1);
+    }
+  }
+  playNext(0);
 }
 
 /* ══ ELEVENLABS ══ */
@@ -667,140 +971,7 @@ async function fetchEL(text,voiceId){
   return audio;
 }
 
-/* ══ FILE HANDLING ══ */
-function handleFile(file){
-  if(!file)return;
-  fileName=file.name.replace(/\.[^.]+$/,'');
-  document.getElementById('playerTitle').textContent=fileName;
-  showLoading('Analisi del copione…');
-  const ext=file.name.split('.').pop().toLowerCase();
-  if(ext==='pdf')parsePDF(file);
-  else if(ext==='docx'||ext==='doc')parseDOCX(file);
-  else parseTextFile(file);
-}
-function parsePDF(file){
-  const r=new FileReader();
-  r.onload=async e=>{
-    try{
-      const pdf=await pdfjsLib.getDocument({data:e.target.result}).promise;
-      let t='';
-      for(let i=1;i<=pdf.numPages;i++){const p=await pdf.getPage(i);const c=await p.getTextContent();t+=c.items.map(x=>x.str).join(' ')+'\n';}
-      processText(t);
-    }catch(err){hideLoading();showToast('Errore PDF: '+err.message);}
-  };
-  r.readAsArrayBuffer(file);
-}
-function parseDOCX(file){
-  const r=new FileReader();
-  r.onload=e=>mammoth.extractRawText({arrayBuffer:e.target.result}).then(x=>processText(x.value)).catch(err=>{hideLoading();showToast('Errore: '+err.message);});
-  r.readAsArrayBuffer(file);
-}
-function parseTextFile(file){
-  const r=new FileReader();
-  r.onload=e=>processText(e.target.result);
-  r.readAsText(file,'UTF-8');
-}
-function processText(rawText){
-  lines=[];roles=[];roleColors={};roleVoiceId={};roleFilters={};
-  for(let raw of rawText.split(/\n/)){
-    const t=raw.trim();if(!t)continue;
-    if(/^\[.+\]$/.test(t)||/^\(.+\)$/.test(t)||t.startsWith('*')){
-      lines.push({type:'stage',speaker:'Scena',text:t.replace(/^[\[\(*]|[\]\)*]$/g,'').trim()});continue;
-    }
-    const m=t.match(/^([A-ZÀ-Ý][A-Za-zÀ-ÿ\s\.]{0,30}):\s*(.+)$/)||t.match(/^([A-ZÀ-Ý][A-Za-zÀ-ÿ\s\.]{0,30})\s+[-–—]\s+(.+)$/);
-    if(m){
-      const speaker=m[1].trim(),text=m[2].trim();
-      if(!roles.includes(speaker)){roles.push(speaker);roleColors[speaker]=ROLE_COLORS[(roles.length-1)%ROLE_COLORS.length];}
-      lines.push({type:'dialogue',speaker,text});
-    }else{lines.push({type:'stage',speaker:'Scena',text:t});}
-  }
-  roles.forEach((r,ri)=>{
-    roleFilters[r]={g:ri%2===0?'M':'F',age:null,tone:null,style:null};
-    const pool=VOICES.filter(v=>v.g===(ri%2===0?'M':'F'));
-    roleVoiceId[r]=(pool[ri%pool.length]||VOICES[0]).id;
-  });
-  hideLoading();
-  updateHomeUI();
-  populateMyCharSelect();
-  buildRoleVoiceUI();
-  renderScript();
-  // Auto-save to Firebase so the group gets it
-  saveSharedData();
-  showScreen('screen-settings');
-}
-
-function loadDemo(){
-  fileName='Amleto';document.getElementById('playerTitle').textContent=fileName;
-  showLoading('Analisi del copione…');
-  setTimeout(()=>processText(`[Atto Primo — Un castello medievale. Notte fonda.]
-
-AMLETO: Essere o non essere, questo è il dilemma. Se sia più nobile nella mente sopportare i colpi e i dardi dell'oltraggioso destino.
-
-ORAZIO: Mio principe, vi attende il fantasma di vostro padre sui bastioni.
-
-AMLETO: Un fantasma? Nel cuore della notte? Andiamo a vederlo.
-
-(Orazio e Amleto si avviano verso i bastioni. Il vento ulula tra le mura.)
-
-FANTASMA: Figlio mio. Io fui assassinato dal tuo zio Claudio mentre dormivo nel mio giardino.
-
-AMLETO: Assassinato? Oh, cielo e terra! Non soffrirò questo oltraggio!
-
-FANTASMA: Vendica la mia ignominiosa e innaturale morte. Addio, addio. Ricordami.
-
-[Il fantasma svanisce lentamente nell'ombra]
-
-AMLETO: O terra che tremi! Dovrò sorridere e fare il malvagio?
-
-ORAZIO: Mio principe, state bene? Sembrate sconvolto.
-
-AMLETO: Sì, benissimo, amico mio. Giurate il silenzio.`),500);
-}
-
-/* ══ RENDER ══ */
-function renderScript(){
-  const c=document.getElementById('scriptContainer');
-  if(!lines.length){c.innerHTML='<div style="text-align:center;padding:60px;color:var(--muted);font-style:italic;">Nessuna riga trovata.</div>';return;}
-  c.innerHTML=lines.map((line,i)=>{
-    const isMe=line.type==='dialogue'&&line.speaker===myChar;
-    const color=line.type==='stage'?'var(--muted)':(roleColors[line.speaker]||'#c9a84c');
-    const skipped=isMe&&!readMyLines;
-    return `<div class="line-block ${isMe?'my-line':''} ${skipped?'skipped':''}" id="line-${i}" onclick="jumpToLine(${i})">
-      ${line.type==='dialogue'
-        ?`<div class="line-speaker" style="color:${color}">${line.speaker}${skipped?'<span class="skip-badge">saltata</span>':''}</div>`
-        :`<div class="line-speaker" style="color:var(--muted)">【 Scena 】</div>`}
-      <div class="line-text ${line.type==='stage'?'stage-direction':''}">${line.text}</div>
-    </div>`;
-  }).join('');
-}
-
-/* ══ PLAYBACK ══ */
-function stopAudio(){if(currentAudio){currentAudio.pause();currentAudio=null;}setBuffering(false);}
-function setBuffering(b){document.getElementById('bufferingRing').classList.toggle('active',b);}
-function startPlaying(){isPlaying=true;updatePlayBtn();speakLine(currentLine);}
-async function speakLine(idx){
-  if(idx>=lines.length){isPlaying=false;updatePlayBtn();showToast('Copione terminato 🎭');return;}
-  currentLine=idx;updateActiveBlock();updateProgress();
-  const line=lines[idx];
-  const isMe=line.type==='dialogue'&&line.speaker===myChar;
-  if(line.type==='stage'&&!readStageDirections)return speakLine(idx+1);
-  if(isMe&&!readMyLines)return setTimeout(()=>speakLine(idx+1),200);
-  document.getElementById('currentSpeakerLabel').textContent=line.type==='stage'?'【 Scena 】':line.speaker;
-  const voiceId=line.type==='stage'?stageVoiceId:(roleVoiceId[line.speaker]||VOICES[0].id);
-  setBuffering(true);
-  try{
-    if(!isPlaying){setBuffering(false);return;}
-    const audio=await fetchEL(line.text,voiceId);
-    if(!isPlaying){setBuffering(false);return;}
-    setBuffering(false);currentAudio=audio;
-    audio.onended=()=>{currentAudio=null;if(isPlaying)speakLine(idx+1);};
-    audio.onerror=()=>{currentAudio=null;if(isPlaying)speakLine(idx+1);};
-    audio.play();
-  }catch(e){
-    setBuffering(false);showToast('⚠ '+e.message);
-    if(isPlaying)setTimeout(()=>speakLine(idx+1),1500);
-  }
-}
+/* ══ CONTROLS ══ */
 function togglePlay(){if(isPlaying){isPlaying=false;stopAudio();updatePlayBtn();}else{isPlaying=true;updatePlayBtn();speakLine(currentLine);}}
 function prevLine(){stopAudio();currentLine=Math.max(0,currentLine-1);if(isPlaying)speakLine(currentLine);else{updateActiveBlock();updateProgress();}}
 function nextLine(){stopAudio();currentLine=Math.min(lines.length-1,currentLine+1);if(isPlaying)speakLine(currentLine);else{updateActiveBlock();updateProgress();}}
@@ -811,8 +982,7 @@ function changeSpeed(d){speechRate=Math.min(2,Math.max(0.5,+(speechRate+d).toFix
 function updatePlayBtn(){document.getElementById('playBtn').textContent=isPlaying?'⏸':'▶';}
 function updateActiveBlock(){
   document.querySelectorAll('.line-block').forEach((el,i)=>{el.classList.remove('active','past');if(i<currentLine)el.classList.add('past');if(i===currentLine)el.classList.add('active');});
-  const el=document.getElementById('line-'+currentLine);
-  if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
+  document.getElementById('line-'+currentLine)?.scrollIntoView({behavior:'smooth',block:'center'});
 }
 function updateProgress(){document.getElementById('progressFill').style.width=(lines.length>1?(currentLine/(lines.length-1)*100):0)+'%';}
 function handleProgressClick(e){const r=e.currentTarget.getBoundingClientRect();jumpToLine(Math.max(0,Math.min(lines.length-1,Math.round((e.clientX-r.left)/r.width*(lines.length-1)))));}
