@@ -243,6 +243,32 @@ select:focus{outline:none;border-color:var(--gold);}
 </div>
 <div id="toast"></div>
 
+<!-- SETUP (prima volta — inserimento API key) -->
+<div class="screen" id="screen-setup">
+  <header>
+    <div class="logo">Palcoscenico <span>Prima configurazione</span></div>
+  </header>
+  <div class="home-body" style="max-width:420px;margin:0 auto;">
+    <div style="font-size:2rem;margin-bottom:10px;">🔑</div>
+    <div class="home-title" style="font-size:1.6rem;">Configurazione iniziale</div>
+    <div class="curtain-divider"></div>
+    <p style="color:var(--cream2);font-size:0.92rem;text-align:center;line-height:1.7;margin-bottom:20px;">
+      Per usare le voci AI inserisci la tua <strong style="color:var(--gold);">API key ElevenLabs</strong>.<br>
+      Verrà salvata sul database condiviso — <em>tutti i dispositivi del gruppo la useranno automaticamente, senza doverla reinserire.</em>
+    </p>
+    <div style="width:100%;">
+      <label class="field-label">API Key ElevenLabs</label>
+      <input type="password" id="setupApiKey" placeholder="Incolla qui la tua key..." 
+        style="width:100%;background:var(--bg3);border:1px solid var(--gold);border-radius:6px;color:var(--cream);padding:12px 14px;font-family:'Cormorant Garamond',serif;font-size:0.95rem;margin-bottom:6px;outline:none;">
+      <div style="font-size:0.75rem;color:var(--muted);font-style:italic;margin-bottom:18px;">
+        Trovala su: elevenlabs.io → Il tuo profilo → API Keys
+      </div>
+      <button class="btn-primary" onclick="saveApiKey()">✦ Salva e continua</button>
+      <button class="btn-secondary" onclick="skipApiKey()">Continua senza (solo voci di sistema)</button>
+    </div>
+  </div>
+</div>
+
 <!-- HOME -->
 <div class="screen" id="screen-home">
   <header>
@@ -414,6 +440,9 @@ select:focus{outline:none;border-color:var(--gold);}
 
     <button class="btn-primary" onclick="saveAndPlay()">✦ Inizia la lettura</button>
     <button class="btn-secondary" onclick="goBack()">Annulla</button>
+    <button onclick="showScreen('screen-setup')" style="width:100%;margin-top:8px;background:none;border:none;color:var(--muted);font-family:'Cormorant Garamond',serif;font-size:0.82rem;font-style:italic;cursor:pointer;padding:8px;text-decoration:underline;text-underline-offset:3px;">
+      🔑 Cambia API key ElevenLabs
+    </button>
   </div>
 </div>
 
@@ -472,7 +501,7 @@ select:focus{outline:none;border-color:var(--gold);}
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-const API_KEY_EL='95cd8576fd89ad9a3c1a090931eaa3cb91ef4c82d79f80b16c2ca3969474763f';
+let API_KEY_EL=''; // caricata da Firebase, mai nel codice
 const EL_MODEL='eleven_multilingual_v2';
 const SHARED_DOC='shared-data';
 const ROLE_COLORS=['#c9a84c','#8b9fd4','#6dbf9e','#d4826d','#b58fd4','#d4c26d','#6db5d4','#d46d9e'];
@@ -535,8 +564,14 @@ function setSyncStatus(state,label){
 async function initFirebase(){
   if(!window._firebaseReady){window.addEventListener('firebase-ready',initFirebase);return;}
   fbReady=true;
-  setSyncStatus('loading','Caricamento copione…');
+  setSyncStatus('loading','Caricamento…');
   try{
+    // 1. Carica config (API key)
+    const cfgSnap=await window._getDoc(window._fbDoc('config'));
+    if(cfgSnap.exists() && cfgSnap.data().elKey){
+      API_KEY_EL=cfgSnap.data().elKey;
+    }
+    // 2. Carica copione e voci
     const snap=await window._getDoc(window._fbDoc(SHARED_DOC));
     if(snap.exists()) applySharedData(snap.data());
     window._onSnapshot(window._fbDoc(SHARED_DOC),(s)=>{
@@ -548,6 +583,28 @@ async function initFirebase(){
   populateMyCharSelect();
   initSkipLabels();
   hideLoading();
+  // Se non c'è la key mostra setup, altrimenti home
+  if(!API_KEY_EL){
+    showScreen('screen-setup');
+  } else {
+    showScreen('screen-home');
+  }
+}
+
+async function saveApiKey(){
+  const key=document.getElementById('setupApiKey').value.trim();
+  if(!key){showToast('Inserisci la API key');return;}
+  try{
+    await window._setDoc(window._fbDoc('config'),{elKey:key,updatedAt:new Date().toISOString()});
+    API_KEY_EL=key;
+    showToast('✓ API key salvata!');
+    setTimeout(()=>showScreen('screen-home'),800);
+  }catch(e){showToast('Errore salvataggio: '+e.message);}
+}
+
+function skipApiKey(){
+  API_KEY_EL='';
+  elFailed=true; // salta direttamente alle voci di sistema
   showScreen('screen-home');
 }
 
