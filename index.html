@@ -11,6 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://js.puter.com/v2/"></script>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
@@ -403,24 +404,8 @@ select:focus{outline:none;border-color:var(--gold);}
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 const API_KEY_EL='95cd8576fd89ad9a3c1a090931eaa3cb91ef4c82d79f80b16c2ca3969474763f';
-const API_KEY_OAI='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';
 const EL_MODEL='eleven_multilingual_v2';
 const SHARED_DOC='shared-data';
-
-/* TTS engine: 'elevenlabs' | 'openai' | 'system' */
-let ttsEngine='elevenlabs';
-let elQuotaExhausted=false;
-let oaiQuotaExhausted=false;
-
-/* OpenAI voice mapping — pick closest to ElevenLabs voice characteristics */
-const OAI_VOICES=['alloy','echo','fable','onyx','nova','shimmer'];
-// Map EL voice gender/tone to OAI voice
-function elToOaiVoice(elVoiceId){
-  const v=VOICES.find(x=>x.id===elVoiceId);
-  if(!v) return 'alloy';
-  if(v.g==='F') return v.tone==='grave'?'nova':v.age==='giovane'?'shimmer':'nova';
-  return v.tone==='grave'?'onyx':v.age==='giovane'?'echo':v.age==='anziano'?'fable':'alloy';
-}
 const ROLE_COLORS=['#c9a84c','#8b9fd4','#6dbf9e','#d4826d','#b58fd4','#d4c26d','#6db5d4','#d46d9e'];
 
 /* Line types:
@@ -981,54 +966,86 @@ async function speakCoro(text, lineIdx){
   playNext(0);
 }
 
-/* ══ TTS — FALLBACK CHAIN ══
-   1. ElevenLabs (migliore qualità)
-   2. OpenAI TTS (ottima qualità, pay-per-use)
-   3. Voci di sistema (gratis, sempre disponibile)
-══════════════════════════════ */
+/* ══════════════════════════════════════════════
+   TTS — CATENA DI FALLBACK (4 livelli)
+   1. ElevenLabs   — voci AI migliori, 10k char/mese
+   2. Amazon Polly — gratis illimitato via Puter.js
+   3. Google TTS   — 4M char/mese gratis via Puter.js
+   4. Voci sistema — sempre disponibile offline
+══════════════════════════════════════════════ */
+let ttsEngine='elevenlabs';
+let elFailed=false, puterPollyFailed=false, puterGoogleFailed=false;
+
+function elToPollyVoice(elVoiceId){
+  const v=VOICES.find(x=>x.id===elVoiceId);
+  if(!v) return {voice:'Giorgio',lang:'it-IT'};
+  if(v.g==='F') return v.age==='giovane'?{voice:'Bianca',lang:'it-IT'}:{voice:'Carla',lang:'it-IT'};
+  return {voice:'Giorgio',lang:'it-IT'};
+}
+
+function elToGoogleVoice(elVoiceId){
+  const v=VOICES.find(x=>x.id===elVoiceId);
+  // Google IT voices: it-IT-Standard-A (F), it-IT-Standard-B (M), it-IT-Standard-C (M), it-IT-Standard-D (F)
+  if(!v) return 'it-IT-Standard-B';
+  if(v.g==='F') return v.age==='giovane'?'it-IT-Standard-D':'it-IT-Standard-A';
+  return v.tone==='grave'?'it-IT-Standard-C':'it-IT-Standard-B';
+}
+
 function updateEngineStatus(){
-  const labels={elevenlabs:'🎙 EL',openai:'🤖 OAI',system:'📢 SYS'};
+  const labels={elevenlabs:'🎙 EL',puter_polly:'🌿 Polly',puter_google:'🔵 Google',system:'📢 SYS'};
   const el=document.getElementById('engineLabel');
   if(el) el.textContent=labels[ttsEngine]||ttsEngine;
 }
 
 async function fetchTTS(text, elVoiceId){
-  // Try ElevenLabs first
-  if(!elQuotaExhausted){
+  // ── 1. ElevenLabs ──
+  if(!elFailed){
     try{
-      const audio=await fetchEL(text, elVoiceId);
+      const audio=await fetchEL(text,elVoiceId);
       if(ttsEngine!=='elevenlabs'){ttsEngine='elevenlabs';updateEngineStatus();}
       return audio;
     }catch(e){
-      console.warn('[EL error]', e.message);
-      if(e.message.startsWith('QUOTA:')||e.message.includes('quota')||e.message.includes('credit')||e.message.includes('exceed')){
-        elQuotaExhausted=true;
-        showToast('ElevenLabs esaurito → OpenAI TTS');
-      } else {
-        // Log but still try OpenAI — EL might be down
-        console.warn('[EL non-quota error, trying OAI anyway]', e.message);
-        showToast('EL: '+e.message.slice(0,60));
-      }
+      console.warn('[EL]',e.message);
+      elFailed=true;
+      showToast(/QUOTA|quota|credit|exceed|limit/i.test(e.message)
+        ?'ElevenLabs esaurito → Amazon Polly'
+        :'ElevenLabs non raggiungibile → Amazon Polly');
     }
   }
-  // Try OpenAI TTS
-  if(!oaiQuotaExhausted){
+
+  // ── 2. Amazon Polly via Puter.js (gratis, illimitato) ──
+  if(!puterPollyFailed && window.puter){
     try{
-      const audio=await fetchOAI(text, elToOaiVoice(elVoiceId));
-      if(ttsEngine!=='openai'){ttsEngine='openai';updateEngineStatus();}
+      const {voice,lang}=elToPollyVoice(elVoiceId);
+      const audio=await puter.ai.txt2speech(text,{voice,engine:'neural',language:lang});
+      audio.playbackRate=Math.min(2,Math.max(0.5,speechRate));
+      if(ttsEngine!=='puter_polly'){ttsEngine='puter_polly';updateEngineStatus();showToast('🌿 Amazon Polly attivo');}
       return audio;
     }catch(e){
-      console.warn('[OAI error]', e.message);
-      showToast('OAI: '+e.message.slice(0,60));
-      if(e.message.includes('quota')||e.message.includes('billing')||e.message.includes('insufficient')||e.message.includes('429')||e.message.includes('credit')){
-        oaiQuotaExhausted=true;
-        showToast('OpenAI non disponibile → voce di sistema');
-      }
+      console.warn('[Polly]',e.message);
+      puterPollyFailed=true;
+      showToast('Polly non disponibile → Google TTS');
     }
   }
-  // System TTS fallback — always works
+
+  // ── 3. Google Cloud TTS via Puter.js (4M char/mese gratis) ──
+  if(!puterGoogleFailed && window.puter){
+    try{
+      const gVoice=elToGoogleVoice(elVoiceId);
+      const audio=await puter.ai.txt2speech(text,{provider:'google',voice:gVoice,language:'it-IT'});
+      audio.playbackRate=Math.min(2,Math.max(0.5,speechRate));
+      if(ttsEngine!=='puter_google'){ttsEngine='puter_google';updateEngineStatus();showToast('🔵 Google TTS attivo');}
+      return audio;
+    }catch(e){
+      console.warn('[Google]',e.message);
+      puterGoogleFailed=true;
+      showToast('Google TTS non disponibile → voce di sistema');
+    }
+  }
+
+  // ── 4. Voci di sistema (sempre disponibile) ──
   if(ttsEngine!=='system'){ttsEngine='system';updateEngineStatus();}
-  return fetchSystem(text, elVoiceId);
+  return fetchSystem(text,elVoiceId);
 }
 
 async function fetchEL(text,voiceId){
@@ -1039,11 +1056,8 @@ async function fetchEL(text,voiceId){
   });
   if(!res.ok){
     const e=await res.json().catch(()=>({}));
-    const msg=(e.detail?.message||e.detail?.status||JSON.stringify(e)||'API error '+res.status);
-    // ElevenLabs quota errors: status 429 or message contains these keywords
-    if(res.status===429||/quota|credit|limit|exceed/i.test(msg)){
-      throw new Error('QUOTA:'+msg);
-    }
+    const msg=e.detail?.message||e.detail?.status||JSON.stringify(e)||'EL error '+res.status;
+    if(res.status===429||/quota|credit|limit|exceed/i.test(msg)) throw new Error('QUOTA:'+msg);
     throw new Error(msg);
   }
   const audio=new Audio(URL.createObjectURL(await res.blob()));
@@ -1051,39 +1065,19 @@ async function fetchEL(text,voiceId){
   return audio;
 }
 
-async function fetchOAI(text, oaiVoice){
-  const res=await fetch('https://api.openai.com/v1/audio/speech',{
-    method:'POST',
-    headers:{'Authorization':'Bearer '+API_KEY_OAI,'Content-Type':'application/json'},
-    body:JSON.stringify({model:'tts-1',input:text,voice:oaiVoice,speed:Math.min(4,Math.max(0.25,speechRate))})
-  });
-  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||'OpenAI error '+res.status);}
-  const audio=new Audio(URL.createObjectURL(await res.blob()));
-  return audio;
-}
-
-function fetchSystem(text, elVoiceId){
-  // Return a promise that resolves to a fake audio object wrapping SpeechSynthesis
-  const v=VOICES.find(x=>x.id===elVoiceId);
-  const sysVoices=speechSynthesis.getVoices();
-  // Pick Italian voice if possible, prefer gender match
-  const itVoices=sysVoices.filter(sv=>sv.lang.startsWith('it'));
-  const pool=itVoices.length?itVoices:sysVoices;
-  const voice=pool[0]||null;
+function fetchSystem(text,elVoiceId){
   return new Promise((resolve)=>{
-    // Wrap SpeechSynthesisUtterance as fake Audio object
+    const sysVoices=speechSynthesis.getVoices();
+    const itVoices=sysVoices.filter(sv=>sv.lang.startsWith('it'));
+    const voice=(itVoices.length?itVoices:sysVoices)[0]||null;
     const fakeAudio={
-      _utt:null,
-      playbackRate:speechRate,
-      onended:null,
-      onerror:null,
+      onended:null,onerror:null,
       play(){
         const utt=new SpeechSynthesisUtterance(text);
         if(voice){utt.voice=voice;utt.lang=voice.lang;}else utt.lang='it-IT';
         utt.rate=Math.min(2,Math.max(0.5,speechRate));
         utt.onend=()=>{if(this.onended)this.onended();};
         utt.onerror=()=>{if(this.onerror)this.onerror();};
-        this._utt=utt;
         speechSynthesis.speak(utt);
       },
       pause(){speechSynthesis.cancel();}
