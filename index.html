@@ -277,35 +277,16 @@ select:focus{outline:none;border-color:var(--gold);}
   </header>
   <div class="home-body">
     <div class="home-title">Il tuo copione,<br>in scena.</div>
-    <div class="home-sub">Carica lo script. Ascolta ogni voce.</div>
+    <div class="home-sub">Scegli uno script. Ascolta ogni voce.</div>
     <div class="curtain-divider"></div>
 
-    <div class="saved-script-card" id="savedScriptCard" style="display:none;">
-      <div class="saved-script-header">
-        <div class="saved-script-icon">📜</div>
-        <div class="saved-script-info">
-          <div class="saved-script-title" id="savedScriptTitle">—</div>
-          <div class="saved-script-meta" id="savedScriptMeta">—</div>
-        </div>
-      </div>
-      <div class="saved-script-actions">
-        <button class="script-action-btn primary" onclick="openAndPlay()">▶ Riproduci</button>
-        <button class="script-action-btn secondary" onclick="showUploadNew()">↑ Carica nuovo</button>
-      </div>
-    </div>
-
-    <div id="uploadSection" style="width:100%;max-width:400px;display:none;">
-      <div class="upload-zone" id="dropZone">
-        <input type="file" id="fileInput" accept=".docx,.doc" onchange="handleFile(this.files[0])">
-        <div class="upload-icon">📜</div>
-        <span class="upload-label">Carica il copione</span>
-        <div class="upload-hint">Word (.docx) — con formattazione grassetto/corsivo</div>
-      </div>
-      <button class="demo-btn" onclick="loadDemo()">→ Carica script di esempio</button>
+    <!-- 3 SLOT COPIONI -->
+    <div id="slotsContainer" style="width:100%;max-width:440px;display:flex;flex-direction:column;gap:12px;margin-top:8px;">
+      <!-- generati da JS -->
     </div>
 
     <!-- FORMAT LEGEND -->
-    <div class="format-legend" id="formatLegend" style="display:none;">
+    <div class="format-legend" id="formatLegend" style="display:none;margin-top:14px;">
       <div class="format-legend-title">📋 Come formattare il copione in Word</div>
       <div class="legend-row">
         <div class="legend-sample normal">NOME: testo</div>
@@ -325,10 +306,27 @@ select:focus{outline:none;border-color:var(--gold);}
       </div>
     </div>
 
-    <div class="sync-bar">
+    <div class="sync-bar" style="margin-top:14px;">
       <div class="sync-dot loading" id="syncDot"></div>
       <span id="syncLabel">Connessione al database…</span>
     </div>
+  </div>
+</div>
+
+<!-- UPLOAD OVERLAY per slot specifico -->
+<div id="uploadOverlay" style="display:none;position:fixed;inset:0;background:rgba(10,6,8,0.92);z-index:300;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+  <div style="background:var(--bg3);border:1px solid var(--gold);border-radius:12px;padding:28px;width:90%;max-width:400px;">
+    <div style="font-family:'Playfair Display',serif;font-style:italic;color:var(--gold);font-size:1.1rem;margin-bottom:16px;">
+      📜 Carica copione — Slot <span id="uploadSlotLabel">1</span>
+    </div>
+    <div class="upload-zone" id="dropZone" style="margin-bottom:12px;">
+      <input type="file" id="fileInput" accept=".docx,.doc" onchange="handleFile(this.files[0])">
+      <div class="upload-icon">📜</div>
+      <span class="upload-label">Carica il copione Word</span>
+      <div class="upload-hint">.docx — grassetto/corsivo supportati</div>
+    </div>
+    <button class="demo-btn" onclick="loadDemo()" style="display:block;margin:0 auto 10px;">→ Carica script di esempio</button>
+    <button onclick="closeUploadOverlay()" style="width:100%;background:none;border:1px solid var(--border);color:var(--muted);padding:10px;border-radius:6px;font-family:'Cormorant Garamond',serif;font-size:0.9rem;cursor:pointer;">Annulla</button>
   </div>
 </div>
 
@@ -503,7 +501,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/p
 
 let API_KEY_EL=''; // caricata da Firebase, mai nel codice
 const EL_MODEL='eleven_multilingual_v2';
-const SHARED_DOC='shared-data';
 const ROLE_COLORS=['#c9a84c','#8b9fd4','#6dbf9e','#d4826d','#b58fd4','#d4c26d','#6db5d4','#d46d9e'];
 
 /* Line types:
@@ -543,6 +540,9 @@ const VOICES=[
 const DEFAULT_ACTION_VOICE = VOICES.find(v=>v.name==='George').id;   // grave autorevole
 const DEFAULT_DESC_VOICE   = VOICES.find(v=>v.name==='Grace').id;    // calma descrittiva
 
+const SLOTS=['slot-1','slot-2','slot-3'];
+const SLOT_LABELS=['Copione 1','Copione 2','Copione 3'];
+
 let lines=[], roles=[], roleColors={};
 let roleVoiceId={}, roleFilters={};
 let actionVoiceId=DEFAULT_ACTION_VOICE;
@@ -553,7 +553,10 @@ let currentLine=0, isPlaying=false;
 let fileName='Copione';
 let currentAudio=null, activePreviewBtn=null;
 let fbReady=false;
-let coroVoiceQueue=[];  // voices to use for TUTTI lines
+let coroVoiceQueue=[];
+let activeSlot=null;
+let uploadTargetSlot=null;
+let slotsData={};
 
 /* ══ FIREBASE ══ */
 function setSyncStatus(state,label){
@@ -566,29 +569,30 @@ async function initFirebase(){
   fbReady=true;
   setSyncStatus('loading','Caricamento…');
   try{
-    // 1. Carica config (API key)
     const cfgSnap=await window._getDoc(window._fbDoc('config'));
-    if(cfgSnap.exists() && cfgSnap.data().elKey){
-      API_KEY_EL=cfgSnap.data().elKey;
+    if(cfgSnap.exists()&&cfgSnap.data().elKey) API_KEY_EL=cfgSnap.data().elKey;
+    for(const slot of SLOTS){
+      const snap=await window._getDoc(window._fbDoc(slot));
+      if(snap.exists()) slotsData[slot]=snap.data();
+      window._onSnapshot(window._fbDoc(slot),(s)=>{
+        if(s.exists()){
+          slotsData[slot]=s.data();
+          renderSlots();
+          if(activeSlot===slot&&document.getElementById('screen-player').classList.contains('active')){
+            applySlotData(s.data());
+          }
+          setSyncStatus('ok','☁️ Sincronizzato');
+        }
+      },(e)=>setSyncStatus('err','⚠ '+e.message));
     }
-    // 2. Carica copione e voci
-    const snap=await window._getDoc(window._fbDoc(SHARED_DOC));
-    if(snap.exists()) applySharedData(snap.data());
-    window._onSnapshot(window._fbDoc(SHARED_DOC),(s)=>{
-      if(s.exists()){applySharedData(s.data());setSyncStatus('ok','☁️ Sincronizzato');}
-    },(e)=>setSyncStatus('err','⚠ '+e.message));
-    setSyncStatus('ok', lines.length?'☁️ Copione caricato':'☁️ Database connesso');
+    setSyncStatus('ok','☁️ Database connesso');
   }catch(e){setSyncStatus('err','⚠ Errore: '+e.message);}
-  updateHomeUI();
+  renderSlots();
   populateMyCharSelect();
   initSkipLabels();
   hideLoading();
-  // Se non c'è la key mostra setup, altrimenti home
-  if(!API_KEY_EL){
-    showScreen('screen-setup');
-  } else {
-    showScreen('screen-home');
-  }
+  if(!API_KEY_EL) showScreen('screen-setup');
+  else showScreen('screen-home');
 }
 
 async function saveApiKey(){
@@ -596,32 +600,30 @@ async function saveApiKey(){
   if(!key){showToast('Inserisci la API key');return;}
   try{
     await window._setDoc(window._fbDoc('config'),{elKey:key,updatedAt:new Date().toISOString()});
-    API_KEY_EL=key;
-    showToast('✓ API key salvata!');
+    API_KEY_EL=key; showToast('✓ API key salvata!');
     setTimeout(()=>showScreen('screen-home'),800);
   }catch(e){showToast('Errore salvataggio: '+e.message);}
 }
+function skipApiKey(){API_KEY_EL='';elFailed=true;showScreen('screen-home');}
 
-function skipApiKey(){
-  API_KEY_EL='';
-  elFailed=true; // salta direttamente alle voci di sistema
-  showScreen('screen-home');
-}
-
-function applySharedData(data){
-  if(data.lines?.length){lines=data.lines;roles=data.roles||[];roleColors=data.roleColors||{};fileName=data.fileName||'Copione';document.getElementById('playerTitle').textContent=fileName;}
+function applySlotData(data){
+  if(data.lines?.length){
+    lines=data.lines; roles=data.roles||[]; roleColors=data.roleColors||{};
+    fileName=data.fileName||'Copione';
+    document.getElementById('playerTitle').textContent=fileName;
+  }
   if(data.roleVoiceId) roleVoiceId=Object.assign({},data.roleVoiceId);
   if(data.roleFilters) roleFilters=Object.assign({},data.roleFilters);
   if(data.actionVoiceId) actionVoiceId=data.actionVoiceId;
   if(data.descVoiceId) descVoiceId=data.descVoiceId;
   buildCoroQueue();
-  updateHomeUI();
   populateMyCharSelect();
   if(document.getElementById('screen-settings').classList.contains('active')) buildRoleVoiceUI();
 }
 
 async function saveSharedData(){
   if(!fbReady){showToast('Database non connesso');return;}
+  if(!activeSlot){showToast('Nessuno slot attivo');return;}
   const btn=document.getElementById('saveSharedBtn');
   const lbl=document.getElementById('saveSharedLabel');
   const ico=document.getElementById('saveSharedIcon');
@@ -629,12 +631,9 @@ async function saveSharedData(){
   actionVoiceId=document.getElementById('actionVoiceSelect')?.value||DEFAULT_ACTION_VOICE;
   descVoiceId=document.getElementById('descVoiceSelect')?.value||DEFAULT_DESC_VOICE;
   try{
-    await window._setDoc(window._fbDoc(SHARED_DOC),{
-      lines,roles,roleColors,fileName,
-      roleVoiceId,roleFilters,
-      actionVoiceId,descVoiceId,
-      updatedAt:new Date().toISOString()
-    });
+    const data={lines,roles,roleColors,fileName,roleVoiceId,roleFilters,actionVoiceId,descVoiceId,updatedAt:new Date().toISOString()};
+    await window._setDoc(window._fbDoc(activeSlot),data);
+    slotsData[activeSlot]=data;
     lbl.textContent='✓ Salvato per tutto il gruppo!'; ico.textContent='✅';
     setTimeout(()=>{lbl.textContent='Salva per tutto il gruppo';ico.textContent='☁️';btn.classList.remove('saving');},2500);
   }catch(e){lbl.textContent='Errore: '+e.message;ico.textContent='⚠';btn.classList.remove('saving');}
@@ -645,11 +644,65 @@ setTimeout(initFirebase,300);
 
 /* ══ CORO QUEUE ══ */
 function buildCoroQueue(){
-  // Use up to 4 different role voices for coro, cycling through them
   const ids=Object.values(roleVoiceId).filter(Boolean);
   const unique=[...new Set(ids)];
-  coroVoiceQueue=unique.length>=2 ? unique.slice(0,4) : [VOICES[0].id, VOICES[14].id];
+  coroVoiceQueue=unique.length>=2?unique.slice(0,4):[VOICES[0].id,VOICES[14].id];
 }
+
+/* ══ SLOT UI ══ */
+function renderSlots(){
+  const container=document.getElementById('slotsContainer');
+  if(!container) return;
+  container.innerHTML=SLOTS.map((slot,i)=>{
+    const data=slotsData[slot];
+    const has=data?.lines?.length>0;
+    const title=data?.fileName||SLOT_LABELS[i];
+    const meta=has?(data.roles?.length||0)+' personaggi · '+(data.lines?.length||0)+' righe':'Vuoto — nessun copione';
+    return `<div style="background:var(--bg3);border:1px solid ${has?'var(--gold)':'var(--border)'};border-radius:10px;overflow:hidden;">
+      <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;">
+        <div style="font-size:1.5rem;">${has?'📜':'📂'}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:1rem;color:${has?'var(--gold2)':'var(--muted)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${title}</div>
+          <div style="font-size:0.74rem;color:var(--muted);margin-top:2px;">${meta}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:${has?'1fr 1fr':'1fr'};border-top:1px solid var(--border);">
+        ${has
+          ?`<button class="script-action-btn primary" onclick="openSlot('${slot}')">▶ Riproduci</button>
+            <button class="script-action-btn secondary" onclick="showUploadForSlot('${slot}')">↑ Sostituisci</button>`
+          :`<button onclick="showUploadForSlot('${slot}')" style="padding:13px;background:none;border:none;color:var(--gold);cursor:pointer;font-family:'Cormorant Garamond',serif;font-size:0.95rem;font-style:italic;width:100%;">+ Carica copione</button>`
+        }
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showUploadForSlot(slot){
+  uploadTargetSlot=slot;
+  document.getElementById('uploadSlotLabel').textContent=SLOTS.indexOf(slot)+1;
+  document.getElementById('uploadOverlay').style.display='flex';
+}
+function closeUploadOverlay(){
+  document.getElementById('uploadOverlay').style.display='none';
+  uploadTargetSlot=null;
+}
+function openSlot(slot){
+  const data=slotsData[slot];
+  if(!data?.lines?.length){showToast('Nessun copione in questo slot');return;}
+  activeSlot=slot;
+  applySlotData(data);
+  renderScript();
+  currentLine=0; isPlaying=false;
+  updatePlayBtn();
+  showScreen('screen-player');
+  // NON parte in automatico — l'utente preme ▶
+}
+
+/* compat */
+function updateHomeUI(){renderSlots();}
+function showUploadNew(){showUploadForSlot(SLOTS[0]);}
+function openSavedScript(){if(activeSlot)openSlot(activeSlot);}
+function openAndPlay(){if(activeSlot)openSlot(activeSlot);}
 
 /* ══ NAVIGATION ══ */
 /* ── PLAYER BAR AUTOHIDE ── */
@@ -677,7 +730,7 @@ function showScreen(id){
   else{clearTimeout(_barTimer);if(bar)bar.classList.add('hidden');}
 }
 function goBack(){stopAudio();if(lines.length)showScreen('screen-player');else showScreen('screen-home');}
-function goHome(){stopAudio();isPlaying=false;updatePlayBtn();updateHomeUI();showScreen('screen-home');}
+function goHome(){stopAudio();isPlaying=false;updatePlayBtn();renderSlots();showScreen('screen-home');}
 function goSettings(){stopAudio();isPlaying=false;updatePlayBtn();buildRoleVoiceUI();initSkipLabels();showScreen('screen-settings');}
 function saveAndPlay(){
   myChar=document.getElementById('myCharSelect').value;
@@ -686,56 +739,15 @@ function saveAndPlay(){
   actionVoiceId=document.getElementById('actionVoiceSelect')?.value||DEFAULT_ACTION_VOICE;
   descVoiceId=document.getElementById('descVoiceSelect')?.value||DEFAULT_DESC_VOICE;
   localStorage.setItem('myChar',myChar);
-  stopAudio();
-  isPlaying=false;
-  currentLine=0;
+  stopAudio(); isPlaying=false; currentLine=0;
   showScreen('screen-player');
   renderScript();
-  startPlaying();
-}
-
-/* ══ HOME UI ══ */
-function updateHomeUI(){
-  const card=document.getElementById('savedScriptCard');
-  const upload=document.getElementById('uploadSection');
-  const legend=document.getElementById('formatLegend');
-  if(lines.length){
-    card.style.display='block'; upload.style.display='none'; legend.style.display='none';
-    document.getElementById('savedScriptTitle').textContent=fileName;
-    const actions=lines.filter(l=>l.type==='action').length;
-    const descs=lines.filter(l=>l.type==='description').length;
-    const coros=lines.filter(l=>l.type==='coro').length;
-    let meta=roles.length+' personaggi · '+lines.length+' righe';
-    if(coros) meta+=' · '+coros+' coro';
-    document.getElementById('savedScriptMeta').textContent=meta;
-  }else{
-    card.style.display='none'; upload.style.display='block'; legend.style.display='block';
-  }
-}
-function showUploadNew(){
-  document.getElementById('savedScriptCard').style.display='none';
-  document.getElementById('uploadSection').style.display='block';
-  document.getElementById('formatLegend').style.display='block';
-}
-function openSavedScript(){renderScript();showScreen('screen-player');}
-function openAndPlay(){
-  myChar=localStorage.getItem('myChar')||'';
-  readActions=document.getElementById('readActions')?.checked??true;
-  readDescriptions=document.getElementById('readDescriptions')?.checked??true;
-  renderScript();
-  showScreen('screen-player');
-  currentLine=0;
-  isPlaying=false;
   startPlaying();
 }
 
 /* ══ SETTINGS UI ══ */
-function saveMyLineMode(val){
-  localStorage.setItem('myLineMode', val);
-}
-function getMyLineMode(){
-  return localStorage.getItem('myLineMode')||'pause';
-}
+function saveMyLineMode(val){localStorage.setItem('myLineMode',val);}
+function getMyLineMode(){return localStorage.getItem('myLineMode')||'pause';}
 
 function populateMyCharSelect(){
   const sel=document.getElementById('myCharSelect');
@@ -743,17 +755,14 @@ function populateMyCharSelect(){
   sel.innerHTML='<option value="">— Nessuno (spettatore) —</option>'+
     roles.map(r=>`<option value="${r}">${r}</option>`).join('');
   if(saved&&roles.includes(saved)){sel.value=saved;myChar=saved;}
-  // Ripristina modalità battute
   const mode=getMyLineMode();
-  document.querySelectorAll('input[name="myLineMode"]').forEach(r=>{
-    r.checked=(r.value===mode);
-  });
+  document.querySelectorAll('input[name="myLineMode"]').forEach(r=>{r.checked=(r.value===mode);});
   updateMyChar();
 }
 function updateMyChar(){
   myChar=document.getElementById('myCharSelect').value;
   document.getElementById('myCharOptions').style.display=myChar?'block':'none';
-  localStorage.setItem('myChar', myChar);
+  localStorage.setItem('myChar',myChar);
 }
 
 function buildSpecialVoiceSelects(){
@@ -967,9 +976,11 @@ function processHTML(html){
     roleVoiceId[r]=(pool[ri%pool.length]||VOICES[0]).id;
   });
   buildCoroQueue();
-
   hideLoading();
-  updateHomeUI();
+  // Salva nel giusto slot e vai alle impostazioni
+  const slot=uploadTargetSlot||SLOTS[0];
+  activeSlot=slot;
+  closeUploadOverlay();
   populateMyCharSelect();
   buildRoleVoiceUI();
   renderScript();
@@ -979,11 +990,9 @@ function processHTML(html){
 
 /* ══ DEMO ══ */
 function loadDemo(){
-  // Demo uses plain text fallback
   fileName='Demo — Amleto';
   document.getElementById('playerTitle').textContent=fileName;
   showLoading('Caricamento demo…');
-  // Manually build lines for demo
   lines=[
     {type:'description',speaker:'Scena',text:'Atto Primo — Un castello medievale. Notte fonda. Il vento soffia tra le torri.'},
     {type:'action',speaker:'Scena',text:'Il fantasma appare tra i merli, avvolto in un mantello spettrale.'},
@@ -1002,16 +1011,13 @@ function loadDemo(){
   ];
   roles=['AMLETO','ORAZIO','FANTASMA','TUTTI'];
   roleColors={AMLETO:'#c9a84c',ORAZIO:'#8b9fd4',FANTASMA:'#d4826d',TUTTI:'#b090d8'};
-  roleVoiceId={
-    AMLETO:VOICES.find(v=>v.name==='Callum').id,
-    ORAZIO:VOICES.find(v=>v.name==='Daniel').id,
-    FANTASMA:VOICES.find(v=>v.name==='George').id,
-    TUTTI:VOICES[0].id
-  };
+  roleVoiceId={AMLETO:VOICES.find(v=>v.name==='Callum').id,ORAZIO:VOICES.find(v=>v.name==='Daniel').id,FANTASMA:VOICES.find(v=>v.name==='George').id,TUTTI:VOICES[0].id};
   roleFilters={AMLETO:{g:'M',age:'giovane',tone:'medio',style:'drammatico'},ORAZIO:{g:'M',age:'adulto',tone:'medio',style:'elegante'},FANTASMA:{g:'M',age:'anziano',tone:'grave',style:'autorevole'}};
   buildCoroQueue();
   hideLoading();
-  updateHomeUI();
+  const slot=uploadTargetSlot||SLOTS[0];
+  activeSlot=slot;
+  closeUploadOverlay();
   populateMyCharSelect();
   buildRoleVoiceUI();
   renderScript();
