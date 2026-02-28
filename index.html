@@ -187,7 +187,9 @@ select:focus{outline:none;border-color:var(--gold);}
 .skip-badge{display:inline-block;font-size:0.67rem;background:rgba(139,26,46,0.25);color:var(--crimson2);border-radius:3px;padding:1px 5px;margin-left:7px;font-style:normal;font-family:'Cormorant Garamond',serif;}
 .coro-voices{font-size:0.7rem;color:rgba(176,144,216,0.6);margin-top:3px;font-style:italic;}
 
-.player-controls{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(to top,var(--bg) 75%,transparent);padding:14px 20px 26px;z-index:10;}
+.my-turn-btn{display:none;width:100%;padding:15px;margin-bottom:10px;background:linear-gradient(135deg,var(--crimson),var(--crimson2));color:var(--cream);border:none;border-radius:8px;font-family:'Playfair Display',serif;font-size:1.05rem;font-style:italic;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 20px rgba(139,26,46,0.4);letter-spacing:0.03em;}
+.my-turn-btn:active{transform:scale(0.98);}
+.my-turn-btn.visible{display:block;}
 .progress-bar-wrap{height:2px;background:rgba(201,168,76,0.12);border-radius:2px;margin-bottom:13px;cursor:pointer;}
 .progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:2px;transition:width 0.3s;pointer-events:none;}
 .controls-row-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
@@ -306,12 +308,31 @@ select:focus{outline:none;border-color:var(--gold);}
       </select>
     </div>
     <div id="myCharOptions" style="display:none;margin-bottom:20px;">
-      <div class="toggle-row">
-        <div>
-          <div class="toggle-label">Leggi le mie battute</div>
-          <div class="toggle-desc">Se disattivato le tue battute vengono saltate</div>
-        </div>
-        <label class="toggle"><input type="checkbox" id="readMyLines" checked onchange="localStorage.setItem('readMyLines',this.checked)"><span class="toggle-slider"></span></label>
+      <div style="margin-bottom:8px;">
+        <div class="field-label">Quando arriva la mia battuta</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;" id="myLineMode">
+        <label style="display:flex;align-items:flex-start;gap:11px;padding:11px 13px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;cursor:pointer;" id="mode-read-label">
+          <input type="radio" name="myLineMode" value="read" style="margin-top:3px;accent-color:var(--gold);" onchange="saveMyLineMode(this.value)">
+          <div>
+            <div style="font-size:0.92rem;color:var(--cream2);">Leggi normalmente</div>
+            <div style="font-size:0.77rem;color:var(--muted);font-style:italic;">L'app legge le tue battute come le altre</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:11px;padding:11px 13px;background:var(--bg3);border:1px solid var(--crimson);border-radius:7px;cursor:pointer;" id="mode-pause-label">
+          <input type="radio" name="myLineMode" value="pause" checked style="margin-top:3px;accent-color:var(--crimson2);" onchange="saveMyLineMode(this.value)">
+          <div>
+            <div style="font-size:0.92rem;color:var(--cream2);">⏸ Metti in pausa</div>
+            <div style="font-size:0.77rem;color:var(--muted);font-style:italic;">L'app si ferma — reciti tu, poi premi ▶ per continuare</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:11px;padding:11px 13px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;cursor:pointer;" id="mode-silent-label">
+          <input type="radio" name="myLineMode" value="silent" style="margin-top:3px;accent-color:var(--gold);" onchange="saveMyLineMode(this.value)">
+          <div>
+            <div style="font-size:0.92rem;color:var(--cream2);">🔇 Leggi in silenzio</div>
+            <div style="font-size:0.77rem;color:var(--muted);font-style:italic;">L'app legge sottovoce le tue battute e va avanti da sola</div>
+          </div>
+        </label>
       </div>
     </div>
 
@@ -448,7 +469,7 @@ let lines=[], roles=[], roleColors={};
 let roleVoiceId={}, roleFilters={};
 let actionVoiceId=DEFAULT_ACTION_VOICE;
 let descVoiceId=DEFAULT_DESC_VOICE;
-let myChar='', readMyLines=true, readActions=true, readDescriptions=true;
+let myChar='', readActions=true, readDescriptions=true;
 let speechRate=1.0;
 let currentLine=0, isPlaying=false;
 let fileName='Copione';
@@ -530,13 +551,11 @@ function goHome(){stopAudio();isPlaying=false;updatePlayBtn();updateHomeUI();sho
 function goSettings(){stopAudio();isPlaying=false;updatePlayBtn();buildRoleVoiceUI();showScreen('screen-settings');}
 function saveAndPlay(){
   myChar=document.getElementById('myCharSelect').value;
-  readMyLines=document.getElementById('readMyLines').checked;
   readActions=document.getElementById('readActions').checked;
   readDescriptions=document.getElementById('readDescriptions').checked;
   actionVoiceId=document.getElementById('actionVoiceSelect')?.value||DEFAULT_ACTION_VOICE;
   descVoiceId=document.getElementById('descVoiceSelect')?.value||DEFAULT_DESC_VOICE;
   localStorage.setItem('myChar',myChar);
-  localStorage.setItem('readMyLines',readMyLines);
   showScreen('screen-player');
   renderScript();
   if(!isPlaying) startPlaying();
@@ -568,23 +587,30 @@ function showUploadNew(){
 function openSavedScript(){renderScript();showScreen('screen-player');}
 
 /* ══ SETTINGS UI ══ */
+function saveMyLineMode(val){
+  localStorage.setItem('myLineMode', val);
+}
+function getMyLineMode(){
+  return localStorage.getItem('myLineMode')||'pause';
+}
+
 function populateMyCharSelect(){
   const sel=document.getElementById('myCharSelect');
   const saved=localStorage.getItem('myChar')||'';
   sel.innerHTML='<option value="">— Nessuno (spettatore) —</option>'+
     roles.map(r=>`<option value="${r}">${r}</option>`).join('');
   if(saved&&roles.includes(saved)){sel.value=saved;myChar=saved;}
-  const sr=localStorage.getItem('readMyLines');
-  if(sr!==null) document.getElementById('readMyLines').checked=sr==='true';
+  // Ripristina modalità battute
+  const mode=getMyLineMode();
+  document.querySelectorAll('input[name="myLineMode"]').forEach(r=>{
+    r.checked=(r.value===mode);
+  });
   updateMyChar();
 }
 function updateMyChar(){
   myChar=document.getElementById('myCharSelect').value;
   document.getElementById('myCharOptions').style.display=myChar?'block':'none';
-  // Salva subito in locale — non serve premere nessun bottone
   localStorage.setItem('myChar', myChar);
-  const rl=document.getElementById('readMyLines');
-  if(rl) localStorage.setItem('readMyLines', rl.checked);
 }
 
 function buildSpecialVoiceSelects(){
@@ -855,7 +881,8 @@ function renderScript(){
   const c=document.getElementById('scriptContainer');
   if(!lines.length){c.innerHTML='<div style="text-align:center;padding:60px;color:var(--muted);font-style:italic;">Nessuna riga trovata.</div>';return;}
   const _myChar=localStorage.getItem('myChar')||myChar;
-  const _readMyLines=localStorage.getItem('readMyLines')!=='false';  c.innerHTML=lines.map((line,i)=>{
+  const _readMyLines=getMyLineMode()==='read';
+  c.innerHTML=lines.map((line,i)=>{
     const isMe=line.type==='dialogue'&&line.speaker===_myChar;
     const skipped=isMe&&!_readMyLines;
     let speakerColor=roleColors[line.speaker]||'var(--muted)';
@@ -900,20 +927,29 @@ async function speakLine(idx){
   currentLine=idx; updateActiveBlock(); updateProgress();
   const line=lines[idx];
 
-  // Leggi sempre i valori aggiornati da localStorage (fix Bug 1)
-  const _readMyLines = localStorage.getItem('readMyLines')!=='false';
+  // Leggi sempre i valori aggiornati da localStorage
   const _myChar = localStorage.getItem('myChar')||myChar;
+  const _mode = getMyLineMode(); // 'read' | 'pause' | 'silent'
   const isMe = line.type==='dialogue' && line.speaker===_myChar;
 
   if(line.type==='action'&&!readActions) return speakLine(idx+1);
   if(line.type==='description'&&!readDescriptions) return speakLine(idx+1);
 
-  // Bug 2 fix: se è la mia battuta e non devo leggerla → PAUSA, aspetta che l'attore prema ⏭
-  if(isMe && !_readMyLines){
+  if(isMe && _mode==='pause'){
+    // Metti in pausa — l'attore recita e poi preme ▶ per continuare
     isPlaying=false;
     updatePlayBtn();
-    document.getElementById('currentSpeakerLabel').textContent='🎤 '+line.speaker+' — tocca ⏭ quando hai finito';
-    // Non chiamare speakLine(idx+1) — l'utente deve premere ⏭ manualmente
+    document.getElementById('currentSpeakerLabel').textContent='🎤 '+line.speaker;
+    updateActiveBlock();
+    return;
+  }
+
+  if(isMe && _mode==='silent'){
+    // Leggi in silenzio — salta l'audio ma aspetta la durata stimata del testo
+    const ms=Math.max(1000, line.text.length * 60); // ~60ms per carattere
+    document.getElementById('currentSpeakerLabel').textContent='🔇 '+line.speaker;
+    await new Promise(r=>setTimeout(r, ms));
+    if(isPlaying) speakLine(idx+1);
     return;
   }
 
@@ -1052,7 +1088,21 @@ function fetchSystem(text,elVoiceId){
 }
 
 /* ══ CONTROLS ══ */
-function togglePlay(){if(isPlaying){isPlaying=false;stopAudio();updatePlayBtn();}else{isPlaying=true;updatePlayBtn();speakLine(currentLine);}}
+function togglePlay(){
+  if(isPlaying){
+    isPlaying=false; stopAudio(); updatePlayBtn();
+  } else {
+    isPlaying=true; updatePlayBtn();
+    // Se la riga corrente è la mia battuta in modalità pausa, avanza alla prossima
+    const _myChar=localStorage.getItem('myChar')||myChar;
+    const _mode=getMyLineMode();
+    const line=lines[currentLine];
+    if(line && line.type==='dialogue' && line.speaker===_myChar && _mode==='pause'){
+      currentLine=Math.min(lines.length-1, currentLine+1);
+    }
+    speakLine(currentLine);
+  }
+}
 function prevLine(){stopAudio();currentLine=Math.max(0,currentLine-1);isPlaying=true;updatePlayBtn();speakLine(currentLine);}
 function nextLine(){
   stopAudio();
