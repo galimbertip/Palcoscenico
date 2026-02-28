@@ -1047,15 +1047,25 @@ async function fetchEL(text,voiceId){
   return audio;
 }
 
+let EdgeTTSLib=null;
+async function loadEdgeTTSLib(){
+  if(EdgeTTSLib) return EdgeTTSLib;
+  // edge-tts-universal: chiama direttamente Microsoft Edge TTS, no account, no server
+  const mod=await import('https://unpkg.com/edge-tts-universal@latest/dist/browser.js');
+  EdgeTTSLib=mod;
+  return mod;
+}
+
 async function fetchEdgeTTS(text, voice){
-  // Endpoint pubblico gratuito basato su Microsoft Edge Neural TTS
-  const res=await fetch('https://tts.travisvn.com/v1/audio/speech',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer none'},
-    body:JSON.stringify({model:'tts-1',input:text,voice,response_format:'mp3'})
-  });
-  if(!res.ok) throw new Error('EdgeTTS error '+res.status);
-  const audio=new Audio(URL.createObjectURL(await res.blob()));
+  const lib=await loadEdgeTTSLib();
+  // Usa il Communicate class del browser build
+  const comm=new lib.Communicate(text,{voice});
+  const chunks=[];
+  for await(const chunk of comm.stream()){
+    if(chunk.type==='audio'&&chunk.data) chunks.push(chunk.data);
+  }
+  const blob=new Blob(chunks,{type:'audio/mpeg'});
+  const audio=new Audio(URL.createObjectURL(blob));
   audio.playbackRate=Math.min(2,Math.max(0.5,speechRate));
   return audio;
 }
