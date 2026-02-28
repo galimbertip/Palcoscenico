@@ -965,33 +965,16 @@ async function speakCoro(text, lineIdx){
   playNext(0);
 }
 
-/* ══════════════════════════════════════════════
-   TTS — CATENA DI FALLBACK (3 livelli)
-   1. ElevenLabs      — voci AI migliori, 10k char/mese
-   2. Edge TTS API    — Microsoft Neural, gratis, no account, no limiti
-   3. Voci di sistema — sempre disponibile offline
-══════════════════════════════════════════════ */
+/* ══════════════════════════════════════
+   TTS — FALLBACK
+   1. ElevenLabs  — voci AI, 10k char/mese
+   2. Voci sistema — sempre disponibile
+══════════════════════════════════════ */
 let ttsEngine='elevenlabs';
-let elFailed=false, edgeFailed=false;
-
-// Voci italiane Microsoft Neural disponibili su Edge TTS
-// Maschi: Diego (giovane), Rinaldo (adulto)
-// Femmine: Elsa (adulta), Isabella (giovane), Benigna (calda)
-function elToEdgeVoice(elVoiceId){
-  const v=VOICES.find(x=>x.id===elVoiceId);
-  if(!v) return 'it-IT-DiegoNeural';
-  if(v.g==='F'){
-    if(v.age==='giovane') return 'it-IT-IsabellaNeural';
-    if(v.style?.includes('calma')||v.style?.includes('saggia')) return 'it-IT-BenignaNeural';
-    return 'it-IT-ElsaNeural';
-  } else {
-    if(v.age==='giovane'||v.tone==='medio') return 'it-IT-DiegoNeural';
-    return 'it-IT-RinaldoNeural';
-  }
-}
+let elFailed=false;
 
 function updateEngineStatus(){
-  const labels={elevenlabs:'🎙 EL',edge:'🔵 Edge',system:'📢 SYS'};
+  const labels={elevenlabs:'🎙 EL',system:'📢 SYS'};
   const el=document.getElementById('engineLabel');
   if(el) el.textContent=labels[ttsEngine]||ttsEngine;
 }
@@ -1007,26 +990,13 @@ async function fetchTTS(text, elVoiceId){
       console.warn('[EL]',e.message);
       elFailed=true;
       showToast(/QUOTA|quota|credit|exceed|limit/i.test(e.message)
-        ?'ElevenLabs esaurito → Microsoft Edge TTS'
-        :'ElevenLabs non raggiungibile → Microsoft Edge TTS');
+        ?'ElevenLabs esaurito → voce di sistema'
+        :'ElevenLabs non raggiungibile → voce di sistema');
     }
   }
 
-  // ── 2. Edge TTS (Microsoft Neural, gratis, no account) ──
-  if(!edgeFailed){
-    try{
-      const audio=await fetchEdgeTTS(text, elToEdgeVoice(elVoiceId));
-      if(ttsEngine!=='edge'){ttsEngine='edge';updateEngineStatus();}
-      return audio;
-    }catch(e){
-      console.warn('[EdgeTTS]',e.message);
-      edgeFailed=true;
-      showToast('Edge TTS non disponibile → voce di sistema');
-    }
-  }
-
-  // ── 3. Voci di sistema (sempre disponibile) ──
-  if(ttsEngine!=='system'){ttsEngine='system';updateEngineStatus();}
+  // ── 2. Voci di sistema (sempre disponibile) ──
+  if(ttsEngine!=='system'){ttsEngine='system';updateEngineStatus();showToast('ElevenLabs esaurito → voce di sistema');}
   return fetchSystem(text,elVoiceId);
 }
 
@@ -1043,29 +1013,6 @@ async function fetchEL(text,voiceId){
     throw new Error(msg);
   }
   const audio=new Audio(URL.createObjectURL(await res.blob()));
-  audio.playbackRate=Math.min(2,Math.max(0.5,speechRate));
-  return audio;
-}
-
-let EdgeTTSLib=null;
-async function loadEdgeTTSLib(){
-  if(EdgeTTSLib) return EdgeTTSLib;
-  // edge-tts-universal: chiama direttamente Microsoft Edge TTS, no account, no server
-  const mod=await import('https://unpkg.com/edge-tts-universal@latest/dist/browser.js');
-  EdgeTTSLib=mod;
-  return mod;
-}
-
-async function fetchEdgeTTS(text, voice){
-  const lib=await loadEdgeTTSLib();
-  // Usa il Communicate class del browser build
-  const comm=new lib.Communicate(text,{voice});
-  const chunks=[];
-  for await(const chunk of comm.stream()){
-    if(chunk.type==='audio'&&chunk.data) chunks.push(chunk.data);
-  }
-  const blob=new Blob(chunks,{type:'audio/mpeg'});
-  const audio=new Audio(URL.createObjectURL(blob));
   audio.playbackRate=Math.min(2,Math.max(0.5,speechRate));
   return audio;
 }
