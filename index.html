@@ -358,7 +358,7 @@ select:focus{outline:none;border-color:var(--gold);}
           </div>
         </label>
         <label style="display:flex;align-items:flex-start;gap:11px;padding:11px 13px;background:var(--bg3);border:1px solid var(--crimson);border-radius:7px;cursor:pointer;" id="mode-pause-label">
-          <input type="radio" name="myLineMode" value="pause" checked style="margin-top:3px;accent-color:var(--crimson2);" onchange="saveMyLineMode(this.value)">
+          <input type="radio" name="myLineMode" value="pause" style="margin-top:3px;accent-color:var(--crimson2);" onchange="saveMyLineMode(this.value)">
           <div>
             <div style="font-size:0.92rem;color:var(--cream2);">⏸ Metti in pausa</div>
             <div style="font-size:0.77rem;color:var(--muted);font-style:italic;">L'app si ferma — reciti tu, poi premi ▶ per continuare</div>
@@ -436,6 +436,7 @@ select:focus{outline:none;border-color:var(--gold);}
     </div>
 
     <button class="btn-primary" onclick="saveAndPlay()">✦ Inizia la lettura</button>
+    <button class="btn-secondary" onclick="saveSettingsOnly()" style="background:rgba(201,168,76,0.08);border-color:var(--gold);color:var(--gold);">💾 Salva impostazioni</button>
     <button class="btn-secondary" onclick="goBack()">Annulla</button>
     <button onclick="showScreen('screen-setup')" style="width:100%;margin-top:8px;background:none;border:none;color:var(--muted);font-family:'Cormorant Garamond',serif;font-size:0.82rem;font-style:italic;cursor:pointer;padding:8px;text-decoration:underline;text-underline-offset:3px;">
       🔑 Cambia API key ElevenLabs
@@ -730,7 +731,14 @@ function showScreen(id){
 }
 function goBack(){stopAudio();if(lines.length)showScreen('screen-player');else showScreen('screen-home');}
 function goHome(){stopAudio();isPlaying=false;updatePlayBtn();renderSlots();showScreen('screen-home');}
-function goSettings(){stopAudio();isPlaying=false;updatePlayBtn();buildRoleVoiceUI();initSkipLabels();showScreen('screen-settings');}
+function goSettings(){
+  stopAudio(); isPlaying=false; updatePlayBtn();
+  buildRoleVoiceUI(); initSkipLabels();
+  // Ripristina radio myLineMode dal localStorage
+  const mode=getMyLineMode();
+  document.querySelectorAll('input[name="myLineMode"]').forEach(r=>{r.checked=(r.value===mode);});
+  showScreen('screen-settings');
+}
 function saveAndPlay(){
   updateMyChar(); // assicura myChars aggiornato
   readActions=document.getElementById('readActions').checked;
@@ -744,7 +752,20 @@ function saveAndPlay(){
 }
 
 /* ══ SETTINGS UI ══ */
-function saveMyLineMode(val){localStorage.setItem('myLineMode',val);}
+function saveSettingsOnly(){
+  // Salva tutto il locale senza avviare la riproduzione
+  updateMyChar();
+  readActions=document.getElementById('readActions').checked;
+  readDescriptions=document.getElementById('readDescriptions').checked;
+  actionVoiceId=document.getElementById('actionVoiceSelect')?.value||DEFAULT_ACTION_VOICE;
+  descVoiceId=document.getElementById('descVoiceSelect')?.value||DEFAULT_DESC_VOICE;
+  const mode=document.querySelector('input[name="myLineMode"]:checked')?.value||'pause';
+  localStorage.setItem('myLineMode', mode);
+  localStorage.setItem('readActions', readActions);
+  localStorage.setItem('readDescriptions', readDescriptions);
+  showToast('✓ Impostazioni salvate');
+}
+
 function getMyLineMode(){return localStorage.getItem('myLineMode')||'pause';}
 
 function populateMyCharSelect(){
