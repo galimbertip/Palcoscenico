@@ -190,40 +190,74 @@ select:focus{outline:none;border-color:var(--gold);}
 .my-turn-btn{display:none;width:100%;padding:15px;margin-bottom:10px;background:linear-gradient(135deg,var(--crimson),var(--crimson2));color:var(--cream);border:none;border-radius:8px;font-family:'Playfair Display',serif;font-size:1.05rem;font-style:italic;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 20px rgba(139,26,46,0.4);letter-spacing:0.03em;}
 .my-turn-btn:active{transform:scale(0.98);}
 .my-turn-btn.visible{display:block;}
-/* ── BARRA CONTROLLI FISSA IN BASSO ── */
+/* ── BARRA CONTROLLI TEATRALE — SEMPRE VISIBILE ── */
 #playerBar{
   position:fixed;bottom:0;left:0;right:0;z-index:500;
-  background:linear-gradient(to top, rgba(10,6,8,0.98) 80%, transparent);
-  padding:10px 20px 22px;
-  transition:transform 0.4s ease, opacity 0.4s ease;
+  background:linear-gradient(to top, rgba(10,6,8,1) 0%, rgba(13,8,11,0.97) 100%);
+  border-top:1px solid rgba(201,168,76,0.25);
+  padding:8px 18px 20px;
 }
-#playerBar.hidden{transform:translateY(100%);opacity:0;pointer-events:none;}
-.pbar-info{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
-.pbar-speaker{font-family:'Playfair Display',serif;font-style:italic;font-size:0.87rem;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%;display:flex;align-items:center;gap:8px;}
+.pbar-info{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.pbar-speaker{font-family:'Playfair Display',serif;font-style:italic;font-size:0.85rem;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%;display:flex;align-items:center;gap:8px;}
 .pbar-meta{display:flex;align-items:center;gap:10px;}
 .pbar-engine{font-size:0.65rem;color:var(--muted);font-style:italic;}
 .pbar-speed{display:flex;align-items:center;gap:6px;}
-.pbar-progress{height:2px;background:rgba(201,168,76,0.15);border-radius:2px;margin-bottom:12px;cursor:pointer;position:relative;}
+.pbar-progress{height:2px;background:rgba(201,168,76,0.12);border-radius:2px;margin-bottom:14px;cursor:pointer;}
 .pbar-progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:2px;transition:width 0.3s;pointer-events:none;}
-.pbar-btns{display:flex;align-items:center;justify-content:center;gap:24px;}
-.pbar-btn{background:none;border:none;cursor:pointer;color:var(--cream2);display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px;transition:all 0.15s;border-radius:8px;}
-.pbar-btn:hover{color:var(--gold);}
-.pbar-btn:active{transform:scale(0.92);}
-.pbar-btn svg,.pbar-btn .pbar-icon{font-size:1.6rem;line-height:1;}
-.pbar-btn .pbar-label{font-size:0.58rem;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;}
-.pbar-btn-play{width:58px;height:58px;border-radius:50%!important;background:linear-gradient(135deg,var(--gold),var(--gold2))!important;color:var(--bg)!important;font-size:1.6rem!important;box-shadow:0 4px 20px rgba(201,168,76,0.35);display:flex!important;align-items:center;justify-content:center;}
-.pbar-btn-play:hover{transform:scale(1.07)!important;}
-.pbar-btn-stop{color:var(--crimson2)!important;}
-.pbar-btn-stop:hover{color:#e05070!important;}
-.pbar-skip-val{font-size:0.6rem;color:rgba(201,168,76,0.5);font-family:'Cormorant Garamond',serif;}
-.speed-btn{background:none;border:1px solid var(--border);color:var(--cream2);width:24px;height:24px;border-radius:4px;cursor:pointer;font-size:0.9rem;display:flex;align-items:center;justify-content:center;}
+
+/* Riga pulsanti */
+.pbar-btns{display:flex;align-items:center;justify-content:center;gap:14px;}
+
+/* Pulsante base — stile medaglione teatrale */
+.pbar-btn{
+  background:none;
+  border:1px solid rgba(201,168,76,0.2);
+  cursor:pointer;
+  color:var(--cream2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  width:52px;height:52px;
+  border-radius:6px;
+  font-family:'Cormorant Garamond',serif;
+  transition:all 0.18s;
+  position:relative;
+}
+.pbar-btn:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,0.06);}
+.pbar-btn:active{transform:scale(0.93);}
+.pbar-icon{font-size:1.3rem;line-height:1;}
+.pbar-label{font-size:0.56rem;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;font-family:'Cormorant Garamond',serif;}
+.pbar-skip-val{font-size:0.58rem;color:rgba(201,168,76,0.45);font-style:italic;}
+
+/* Play — oro, più grande, rotondo */
+.pbar-btn-play{
+  width:62px;height:62px;
+  border-radius:50%!important;
+  border:2px solid var(--gold)!important;
+  background:linear-gradient(145deg,rgba(201,168,76,0.15),rgba(201,168,76,0.05))!important;
+  color:var(--gold)!important;
+  font-size:1.5rem!important;
+  box-shadow:0 0 18px rgba(201,168,76,0.15), inset 0 1px 0 rgba(201,168,76,0.2);
+}
+.pbar-btn-play:hover{
+  background:linear-gradient(145deg,rgba(201,168,76,0.3),rgba(201,168,76,0.1))!important;
+  box-shadow:0 0 28px rgba(201,168,76,0.3)!important;
+  transform:scale(1.05)!important;
+}
+
+/* Stop — cremisi */
+.pbar-btn-stop{
+  border-color:rgba(139,26,46,0.35)!important;
+  color:var(--crimson2)!important;
+}
+.pbar-btn-stop:hover{border-color:var(--crimson2)!important;background:rgba(139,26,46,0.1)!important;}
+
+.speed-btn{background:none;border:1px solid var(--border);color:var(--cream2);width:22px;height:22px;border-radius:3px;cursor:pointer;font-size:0.85rem;display:flex;align-items:center;justify-content:center;}
 .speed-btn:hover{border-color:var(--gold);color:var(--gold);}
 .speed-val{font-size:0.78rem;color:var(--cream2);min-width:28px;text-align:center;}
-.buffering-ring{width:16px;height:16px;border:2px solid rgba(201,168,76,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;display:none;}
+.buffering-ring{width:14px;height:14px;border:2px solid rgba(201,168,76,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;display:none;}
 .buffering-ring.active{display:block;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
-#toast{position:fixed;bottom:145px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border);color:var(--cream2);padding:9px 18px;border-radius:20px;font-size:0.87rem;font-style:italic;z-index:600;opacity:0;pointer-events:none;transition:opacity 0.3s;white-space:nowrap;max-width:90%;}
+#toast{position:fixed;bottom:160px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border);color:var(--cream2);padding:9px 18px;border-radius:20px;font-size:0.87rem;font-style:italic;z-index:600;opacity:0;pointer-events:none;transition:opacity 0.3s;white-space:nowrap;max-width:90%;}
 #toast.show{opacity:1;}
 .loading-overlay{position:fixed;inset:0;background:rgba(10,6,8,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:18px;}
 .loading-overlay.hidden{display:none;}
@@ -456,8 +490,8 @@ select:focus{outline:none;border-color:var(--gold);}
   <div class="script-container" id="scriptContainer" style="padding-bottom:160px;"></div>
 </div>
 
-<!-- BARRA CONTROLLI FISSA — visibile solo nel player -->
-<div id="playerBar" class="hidden">
+<!-- BARRA CONTROLLI TEATRALE — SEMPRE VISIBILE NEL PLAYER -->
+<div id="playerBar" style="display:none;">
   <div class="pbar-info">
     <div class="pbar-speaker">
       <span id="currentSpeakerLabel">—</span>
@@ -472,26 +506,22 @@ select:focus{outline:none;border-color:var(--gold);}
       </div>
     </div>
   </div>
-  <div class="pbar-progress" id="progressWrap" onclick="handleProgressClick(event)">
+  <div class="pbar-progress" onclick="handleProgressClick(event)">
     <div class="pbar-progress-fill" id="progressFill" style="width:0%"></div>
   </div>
   <div class="pbar-btns">
-    <!-- INDIETRO -->
     <button class="pbar-btn" onclick="skipBack()">
-      <span class="pbar-icon">⏪</span>
-      <span class="pbar-skip-val">−<span id="skipBackVal">3</span></span>
+      <span class="pbar-icon">◀◀</span>
+      <span class="pbar-skip-val">−<span id="skipBackVal">3</span> rig.</span>
     </button>
-    <!-- PLAY/PAUSA -->
     <button class="pbar-btn pbar-btn-play" id="playBtn" onclick="togglePlay()">▶</button>
-    <!-- STOP -->
     <button class="pbar-btn pbar-btn-stop" onclick="stopAndReset()">
-      <span class="pbar-icon">⏹</span>
-      <span class="pbar-label">stop</span>
+      <span class="pbar-icon">◼</span>
+      <span class="pbar-label">fine</span>
     </button>
-    <!-- AVANTI -->
     <button class="pbar-btn" onclick="skipFwd()">
-      <span class="pbar-icon">⏩</span>
-      <span class="pbar-skip-val">+<span id="skipFwdVal">3</span></span>
+      <span class="pbar-icon">▶▶</span>
+      <span class="pbar-skip-val">+<span id="skipFwdVal">3</span> rig.</span>
     </button>
   </div>
 </div>
@@ -705,29 +735,12 @@ function openSavedScript(){if(activeSlot)openSlot(activeSlot);}
 function openAndPlay(){if(activeSlot)openSlot(activeSlot);}
 
 /* ══ NAVIGATION ══ */
-/* ── PLAYER BAR AUTOHIDE ── */
-let _barTimer=null;
-function showBar(){
-  const bar=document.getElementById('playerBar');
-  if(!bar) return;
-  bar.classList.remove('hidden');
-  clearTimeout(_barTimer);
-  _barTimer=setTimeout(()=>{ if(!isPlaying) return; bar.classList.add('hidden'); },5000);
-}
-document.addEventListener('click',()=>{
-  if(document.getElementById('screen-player')?.classList.contains('active')) showBar();
-});
-document.addEventListener('touchstart',()=>{
-  if(document.getElementById('screen-player')?.classList.contains('active')) showBar();
-},{passive:true});
-
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
   const bar=document.getElementById('playerBar');
-  if(id==='screen-player'){showBar();}
-  else{clearTimeout(_barTimer);if(bar)bar.classList.add('hidden');}
+  if(bar) bar.style.display=(id==='screen-player')?'block':'none';
 }
 function goBack(){stopAudio();if(lines.length)showScreen('screen-player');else showScreen('screen-home');}
 function goHome(){stopAudio();isPlaying=false;updatePlayBtn();renderSlots();showScreen('screen-home');}
@@ -1338,7 +1351,6 @@ function changeSpeed(d){speechRate=Math.min(2,Math.max(0.5,+(speechRate+d).toFix
 function updatePlayBtn(){
   const btn=document.getElementById('playBtn');
   if(btn) btn.textContent=isPlaying?'⏸':'▶';
-  if(isPlaying) showBar();
 }
 function updateActiveBlock(){
   document.querySelectorAll('.line-block').forEach((el,i)=>{el.classList.remove('active','past');if(i<currentLine)el.classList.add('past');if(i===currentLine)el.classList.add('active');});
