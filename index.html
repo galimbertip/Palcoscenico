@@ -380,10 +380,13 @@ select:focus{outline:none;border-color:var(--gold);}
         <div class="current-speaker" id="currentSpeakerLabel">—</div>
         <div class="buffering-ring" id="bufferingRing"></div>
       </div>
-      <div class="speed-control">
-        <button class="speed-btn" onclick="changeSpeed(-0.1)">−</button>
-        <span class="speed-val" id="speedLabel">1.0×</span>
-        <button class="speed-btn" onclick="changeSpeed(+0.1)">+</button>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span id="engineLabel" style="font-size:0.68rem;color:var(--muted);font-style:italic;">🎙 EL</span>
+        <div class="speed-control">
+          <button class="speed-btn" onclick="changeSpeed(-0.1)">−</button>
+          <span class="speed-val" id="speedLabel">1.0×</span>
+          <button class="speed-btn" onclick="changeSpeed(+0.1)">+</button>
+        </div>
       </div>
     </div>
     <div class="controls-main">
@@ -399,9 +402,25 @@ select:focus{outline:none;border-color:var(--gold);}
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-const API_KEY='95cd8576fd89ad9a3c1a090931eaa3cb91ef4c82d79f80b16c2ca3969474763f';
+const API_KEY_EL='95cd8576fd89ad9a3c1a090931eaa3cb91ef4c82d79f80b16c2ca3969474763f';
+const API_KEY_OAI='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';
 const EL_MODEL='eleven_multilingual_v2';
 const SHARED_DOC='shared-data';
+
+/* TTS engine: 'elevenlabs' | 'openai' | 'system' */
+let ttsEngine='elevenlabs';
+let elQuotaExhausted=false;
+let oaiQuotaExhausted=false;
+
+/* OpenAI voice mapping — pick closest to ElevenLabs voice characteristics */
+const OAI_VOICES=['alloy','echo','fable','onyx','nova','shimmer'];
+// Map EL voice gender/tone to OAI voice
+function elToOaiVoice(elVoiceId){
+  const v=VOICES.find(x=>x.id===elVoiceId);
+  if(!v) return 'alloy';
+  if(v.g==='F') return v.tone==='grave'?'nova':v.age==='giovane'?'shimmer':'nova';
+  return v.tone==='grave'?'onyx':v.age==='giovane'?'echo':v.age==='anziano'?'fable':'alloy';
+}
 const ROLE_COLORS=['#c9a84c','#8b9fd4','#6dbf9e','#d4826d','#b58fd4','#d4c26d','#6db5d4','#d46d9e'];
 
 /* Line types:
@@ -701,7 +720,7 @@ async function doPreview(voiceId,btn,text){
   if(activePreviewBtn===btn){activePreviewBtn=null;return;}
   btn.classList.add('playing'); activePreviewBtn=btn;
   try{
-    const audio=await fetchEL(text,voiceId);
+    const audio=await fetchTTS(text,voiceId);
     currentAudio=audio;
     audio.onended=()=>{btn.classList.remove('playing');if(activePreviewBtn===btn)activePreviewBtn=null;currentAudio=null;};
     audio.play();
@@ -913,7 +932,7 @@ async function speakLine(idx){
   setBuffering(true);
   try{
     if(!isPlaying){setBuffering(false);return;}
-    const audio=await fetchEL(line.text,voiceId);
+    const audio=await fetchTTS(line.text,voiceId);
     if(!isPlaying){setBuffering(false);return;}
     setBuffering(false); currentAudio=audio;
     audio.onended=()=>{currentAudio=null;if(isPlaying)speakLine(idx+1);};
@@ -940,7 +959,7 @@ async function speakCoro(text, lineIdx){
     document.getElementById('currentSpeakerLabel').textContent=`🎭 TUTTI (${i+1}/${voicesToUse.length} — ${vname})`;
     setBuffering(true);
     try{
-      const audio=await fetchEL(text,voicesToUse[i]);
+      const audio=await fetchTTS(text,voicesToUse[i]);
       if(!isPlaying){setBuffering(false);return;}
       setBuffering(false); currentAudio=audio;
       audio.onended=()=>{
@@ -958,17 +977,104 @@ async function speakCoro(text, lineIdx){
   playNext(0);
 }
 
-/* ══ ELEVENLABS ══ */
+/* ══ TTS — FALLBACK CHAIN ══
+   1. ElevenLabs (migliore qualità)
+   2. OpenAI TTS (ottima qualità, pay-per-use)
+   3. Voci di sistema (gratis, sempre disponibile)
+══════════════════════════════ */
+function updateEngineStatus(){
+  const labels={elevenlabs:'🎙 EL',openai:'🤖 OAI',system:'📢 SYS'};
+  const el=document.getElementById('engineLabel');
+  if(el) el.textContent=labels[ttsEngine]||ttsEngine;
+}
+
+async function fetchTTS(text, elVoiceId){
+  // Try ElevenLabs first
+  if(!elQuotaExhausted){
+    try{
+      const audio=await fetchEL(text, elVoiceId);
+      ttsEngine='elevenlabs'; updateEngineStatus();
+      return audio;
+    }catch(e){
+      if(e.message.includes('quota')||e.message.includes('credit')||e.message.includes('429')||e.message.includes('limit')){
+        elQuotaExhausted=true;
+        showToast('ElevenLabs esaurito → OpenAI TTS');
+      } else {
+        throw e;
+      }
+    }
+  }
+  // Try OpenAI TTS
+  if(!oaiQuotaExhausted){
+    try{
+      const audio=await fetchOAI(text, elToOaiVoice(elVoiceId));
+      ttsEngine='openai'; updateEngineStatus();
+      return audio;
+    }catch(e){
+      if(e.message.includes('quota')||e.message.includes('billing')||e.message.includes('429')||e.message.includes('insufficient')){
+        oaiQuotaExhausted=true;
+        showToast('OpenAI esaurito → voce di sistema');
+      } else {
+        throw e;
+      }
+    }
+  }
+  // System TTS fallback
+  ttsEngine='system'; updateEngineStatus();
+  return fetchSystem(text, elVoiceId);
+}
+
 async function fetchEL(text,voiceId){
   const res=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,{
     method:'POST',
-    headers:{'xi-api-key':API_KEY,'Content-Type':'application/json','Accept':'audio/mpeg'},
+    headers:{'xi-api-key':API_KEY_EL,'Content-Type':'application/json','Accept':'audio/mpeg'},
     body:JSON.stringify({text,model_id:EL_MODEL,voice_settings:{stability:0.5,similarity_boost:0.8,style:0.2,use_speaker_boost:true}})
   });
   if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail?.message||'API error '+res.status);}
   const audio=new Audio(URL.createObjectURL(await res.blob()));
   audio.playbackRate=Math.min(2,Math.max(0.5,speechRate));
   return audio;
+}
+
+async function fetchOAI(text, oaiVoice){
+  const res=await fetch('https://api.openai.com/v1/audio/speech',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+API_KEY_OAI,'Content-Type':'application/json'},
+    body:JSON.stringify({model:'tts-1',input:text,voice:oaiVoice,speed:Math.min(4,Math.max(0.25,speechRate))})
+  });
+  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||'OpenAI error '+res.status);}
+  const audio=new Audio(URL.createObjectURL(await res.blob()));
+  return audio;
+}
+
+function fetchSystem(text, elVoiceId){
+  // Return a promise that resolves to a fake audio object wrapping SpeechSynthesis
+  const v=VOICES.find(x=>x.id===elVoiceId);
+  const sysVoices=speechSynthesis.getVoices();
+  // Pick Italian voice if possible, prefer gender match
+  const itVoices=sysVoices.filter(sv=>sv.lang.startsWith('it'));
+  const pool=itVoices.length?itVoices:sysVoices;
+  const voice=pool[0]||null;
+  return new Promise((resolve)=>{
+    // Wrap SpeechSynthesisUtterance as fake Audio object
+    const fakeAudio={
+      _utt:null,
+      playbackRate:speechRate,
+      onended:null,
+      onerror:null,
+      play(){
+        const utt=new SpeechSynthesisUtterance(text);
+        if(voice){utt.voice=voice;utt.lang=voice.lang;}else utt.lang='it-IT';
+        utt.rate=Math.min(2,Math.max(0.5,speechRate));
+        utt.onend=()=>{if(this.onended)this.onended();};
+        utt.onerror=()=>{if(this.onerror)this.onerror();};
+        this._utt=utt;
+        speechSynthesis.speak(utt);
+      },
+      pause(){speechSynthesis.cancel();}
+    };
+    resolve(fakeAudio);
+  });
 }
 
 /* ══ CONTROLS ══ */
