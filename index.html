@@ -12,11 +12,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 
-<!-- Firebase -->
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, doc, getDoc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-
 const firebaseConfig = {
   apiKey: "AIzaSyBehq5OU8E784W4smVWUGZRI79zstis6Hs",
   authDomain: "palcoscenico-94f83.firebaseapp.com",
@@ -25,11 +23,8 @@ const firebaseConfig = {
   messagingSenderId: "136170432462",
   appId: "1:136170432462:web:5f1673f418c76ac56c2d9f"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-
-// Expose to global scope
 window._db = db;
 window._fbDoc = (id) => doc(db, 'palcoscenico', id);
 window._getDoc = getDoc;
@@ -59,11 +54,28 @@ header{padding:16px 20px;display:flex;align-items:center;justify-content:space-b
 .header-btn{background:none;border:1px solid var(--border);color:var(--cream2);padding:7px 13px;border-radius:4px;font-family:'Cormorant Garamond',serif;font-size:0.95rem;cursor:pointer;transition:all 0.2s;}
 .header-btn:hover{border-color:var(--gold);color:var(--gold);}
 
-/* HOME */
-#screen-home{justify-content:center;align-items:center;padding:40px 20px;}
+/* ── HOME ── */
+#screen-home{padding:0;}
+.home-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 20px;gap:0;}
 .curtain-divider{width:60px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:20px auto;}
 .home-title{font-family:'Playfair Display',serif;font-size:clamp(2rem,8vw,3.2rem);font-style:italic;color:var(--gold);line-height:1.1;text-align:center;text-shadow:0 2px 20px rgba(201,168,76,0.3);}
 .home-sub{font-family:'IM Fell English',serif;font-size:1rem;color:var(--cream2);font-style:italic;margin-top:6px;opacity:0.8;text-align:center;}
+
+/* SAVED SCRIPT CARD */
+.saved-script-card{width:100%;max-width:400px;margin-top:28px;background:var(--bg3);border:1px solid var(--gold);border-radius:10px;overflow:hidden;}
+.saved-script-header{padding:16px 18px;display:flex;align-items:center;gap:12px;}
+.saved-script-icon{font-size:1.8rem;flex-shrink:0;}
+.saved-script-info{flex:1;min-width:0;}
+.saved-script-title{font-family:'Playfair Display',serif;font-style:italic;font-size:1.1rem;color:var(--gold2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.saved-script-meta{font-size:0.78rem;color:var(--muted);margin-top:2px;}
+.saved-script-actions{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--border);}
+.script-action-btn{padding:13px;background:none;border:none;cursor:pointer;font-family:'Playfair Display',serif;font-size:0.9rem;font-style:italic;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.script-action-btn.primary{color:var(--gold);border-right:1px solid var(--border);}
+.script-action-btn.primary:hover{background:rgba(201,168,76,0.1);}
+.script-action-btn.secondary{color:var(--muted);}
+.script-action-btn.secondary:hover{background:rgba(255,255,255,0.03);color:var(--cream2);}
+
+/* NO SCRIPT STATE */
 .upload-zone{margin:28px auto 0;width:100%;max-width:400px;border:1px dashed var(--gold);border-radius:8px;padding:36px 24px;background:rgba(201,168,76,0.03);cursor:pointer;transition:all 0.3s;position:relative;text-align:center;}
 .upload-zone:hover,.upload-zone.drag-over{background:rgba(201,168,76,0.08);border-color:var(--gold2);transform:translateY(-2px);}
 .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
@@ -73,9 +85,9 @@ header{padding:16px 20px;display:flex;align-items:center;justify-content:space-b
 .demo-btn{margin-top:16px;background:none;border:none;color:var(--muted);font-family:'Cormorant Garamond',serif;font-size:0.9rem;font-style:italic;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
 .demo-btn:hover{color:var(--cream2);}
 
-/* SYNC STATUS */
-.sync-bar{display:flex;align-items:center;gap:8px;margin:14px auto 0;max-width:400px;width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:0.84rem;color:var(--cream2);}
-.sync-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+/* SYNC BAR */
+.sync-bar{display:flex;align-items:center;gap:8px;margin:14px auto 0;max-width:400px;width:100%;padding:9px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;color:var(--cream2);}
+.sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .sync-dot.ok{background:var(--green);}
 .sync-dot.loading{background:var(--gold);animation:pulse 1s infinite;}
 .sync-dot.err{background:var(--crimson2);}
@@ -84,11 +96,17 @@ header{padding:16px 20px;display:flex;align-items:center;justify-content:space-b
 .tip-box{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:13px 15px;margin-top:14px;font-size:0.84rem;color:var(--cream2);line-height:1.6;max-width:400px;width:100%;}
 .tip-box strong{color:var(--gold);display:block;margin-bottom:4px;font-family:'Playfair Display',serif;font-style:italic;}
 
-/* SETTINGS */
+/* UPLOAD NEW (inline, small) */
+.upload-new-zone{width:100%;max-width:400px;margin-top:10px;border:1px dashed rgba(201,168,76,0.3);border-radius:8px;padding:14px 18px;background:transparent;cursor:pointer;transition:all 0.3s;position:relative;text-align:center;display:none;}
+.upload-new-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-new-zone:hover{border-color:var(--gold);background:rgba(201,168,76,0.05);}
+.upload-new-label{font-size:0.88rem;color:var(--muted);font-style:italic;}
+
+/* ── SETTINGS ── */
 #screen-settings{padding:0 0 40px;}
 .settings-body{padding:20px;flex:1;overflow-y:auto;}
-.section-title{font-family:'Playfair Display',serif;font-size:1.1rem;font-style:italic;color:var(--gold);margin-bottom:13px;padding-bottom:8px;border-bottom:1px solid var(--border);}
-.section-subtitle{font-size:0.8rem;color:var(--muted);font-style:italic;margin-top:-8px;margin-bottom:13px;}
+.section-title{font-family:'Playfair Display',serif;font-size:1.1rem;font-style:italic;color:var(--gold);margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.section-subtitle{font-size:0.79rem;color:var(--muted);font-style:italic;margin-bottom:13px;}
 .field-group{margin-bottom:22px;}
 .field-label{display:block;font-size:0.78rem;color:var(--cream2);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:7px;}
 select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--cream);padding:9px 30px 9px 11px;font-family:'Cormorant Garamond',serif;font-size:0.93rem;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23c9a84c'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;}
@@ -104,8 +122,6 @@ select:focus{outline:none;border-color:var(--gold);}
 .preview-btn{flex-shrink:0;background:none;border:1px solid var(--border);color:var(--cream2);width:33px;height:33px;border-radius:4px;cursor:pointer;font-size:0.95rem;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
 .preview-btn:hover{border-color:var(--gold);color:var(--gold);}
 .preview-btn.playing{border-color:var(--crimson2);color:var(--crimson2);animation:pulse 1s infinite;}
-
-/* VOICE PICKER */
 .picker-label{font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;}
 .pill-group{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
 .pill{background:var(--bg2);border:1px solid var(--border);color:var(--cream2);padding:5px 12px;border-radius:20px;font-family:'Cormorant Garamond',serif;font-size:0.85rem;cursor:pointer;transition:all 0.18s;white-space:nowrap;}
@@ -118,12 +134,10 @@ select:focus{outline:none;border-color:var(--gold);}
 .voice-result-name{font-family:'Playfair Display',serif;font-style:italic;font-size:0.9rem;color:var(--gold2);}
 .voice-result-desc{font-size:0.75rem;color:var(--muted);}
 
-/* SAVE SHARED BTN */
-.btn-save-shared{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;background:rgba(90,158,111,0.15);border:1px solid rgba(90,158,111,0.4);border-radius:6px;color:#8ecfa8;font-family:'Playfair Display',serif;font-size:0.95rem;font-style:italic;cursor:pointer;transition:all 0.2s;margin-top:16px;}
-.btn-save-shared:hover{background:rgba(90,158,111,0.25);}
+.btn-save-shared{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;background:rgba(90,158,111,0.12);border:1px solid rgba(90,158,111,0.35);border-radius:6px;color:#8ecfa8;font-family:'Playfair Display',serif;font-size:0.95rem;font-style:italic;cursor:pointer;transition:all 0.2s;margin-top:16px;}
+.btn-save-shared:hover{background:rgba(90,158,111,0.22);}
 .btn-save-shared.saving{opacity:0.6;pointer-events:none;}
 
-/* TOGGLE */
 .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid rgba(201,168,76,0.07);}
 .toggle-label{font-size:0.92rem;color:var(--cream2);}
 .toggle-desc{font-size:0.77rem;color:var(--muted);font-style:italic;margin-top:2px;}
@@ -139,7 +153,7 @@ select:focus{outline:none;border-color:var(--gold);}
 .btn-secondary{display:block;width:100%;padding:11px;background:none;color:var(--cream2);border:1px solid var(--border);border-radius:6px;font-family:'Cormorant Garamond',serif;font-size:0.97rem;cursor:pointer;transition:all 0.2s;margin-top:8px;}
 .btn-secondary:hover{border-color:var(--gold);color:var(--gold);}
 
-/* PLAYER */
+/* ── PLAYER ── */
 #screen-player{padding:0;}
 .player-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
 .play-title{font-family:'Playfair Display',serif;font-size:1.05rem;font-style:italic;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%;}
@@ -173,9 +187,10 @@ select:focus{outline:none;border-color:var(--gold);}
 .buffering-ring{width:18px;height:18px;border:2px solid rgba(201,168,76,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;display:none;margin-left:8px;}
 .buffering-ring.active{display:block;}
 @keyframes spin{to{transform:rotate(360deg);}}
+
 #toast{position:fixed;bottom:175px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border);color:var(--cream2);padding:9px 18px;border-radius:20px;font-size:0.87rem;font-style:italic;z-index:100;opacity:0;pointer-events:none;transition:opacity 0.3s;white-space:nowrap;max-width:90%;}
 #toast.show{opacity:1;}
-.loading-overlay{position:fixed;inset:0;background:rgba(10,6,8,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:18px;}
+.loading-overlay{position:fixed;inset:0;background:rgba(10,6,8,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:18px;}
 .loading-overlay.hidden{display:none;}
 .loading-spinner{width:44px;height:44px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite;}
 .loading-text{font-style:italic;color:var(--cream2);font-size:0.95rem;}
@@ -187,30 +202,52 @@ select:focus{outline:none;border-color:var(--gold);}
 </head>
 <body>
 
-<div class="loading-overlay hidden" id="loadingOverlay">
+<div class="loading-overlay" id="loadingOverlay">
   <div class="loading-spinner"></div>
-  <div class="loading-text" id="loadingText">Lettura del copione…</div>
+  <div class="loading-text" id="loadingText">Connessione al database…</div>
 </div>
 <div id="toast"></div>
 
-<!-- HOME -->
-<div class="screen active" id="screen-home">
+<!-- ══════════════ HOME ══════════════ -->
+<div class="screen" id="screen-home">
   <header>
     <div class="logo">Palcoscenico <span>Lettore Teatrale</span></div>
     <button class="header-btn" onclick="goSettings()">⚙ Impostazioni</button>
   </header>
-  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 20px;">
+  <div class="home-body">
     <div class="home-title">Il tuo copione,<br>in scena.</div>
     <div class="home-sub">Carica lo script. Ascolta ogni voce.</div>
     <div class="curtain-divider"></div>
 
-    <div class="upload-zone" id="dropZone">
-      <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt" onchange="handleFile(this.files[0])">
-      <div class="upload-icon">📜</div>
-      <span class="upload-label">Carica il copione</span>
-      <div class="upload-hint">PDF · Word (.docx) · Testo semplice</div>
+    <!-- SAVED SCRIPT (shown when script exists in Firebase) -->
+    <div class="saved-script-card" id="savedScriptCard" style="display:none;">
+      <div class="saved-script-header">
+        <div class="saved-script-icon">📜</div>
+        <div class="saved-script-info">
+          <div class="saved-script-title" id="savedScriptTitle">—</div>
+          <div class="saved-script-meta" id="savedScriptMeta">—</div>
+        </div>
+      </div>
+      <div class="saved-script-actions">
+        <button class="script-action-btn primary" onclick="openSavedScript()">
+          ▶ Apri il copione
+        </button>
+        <button class="script-action-btn secondary" onclick="showUploadNew()">
+          ↑ Carica nuovo
+        </button>
+      </div>
     </div>
-    <button class="demo-btn" onclick="loadDemo()">→ Carica script di esempio</button>
+
+    <!-- UPLOAD NEW (shown when no script, or "Carica nuovo" clicked) -->
+    <div id="uploadSection" style="width:100%;max-width:400px;display:none;">
+      <div class="upload-zone" id="dropZone">
+        <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt" onchange="handleFile(this.files[0])">
+        <div class="upload-icon">📜</div>
+        <span class="upload-label">Carica il copione</span>
+        <div class="upload-hint">PDF · Word (.docx) · Testo semplice</div>
+      </div>
+      <button class="demo-btn" onclick="loadDemo()">→ Carica script di esempio</button>
+    </div>
 
     <!-- SYNC STATUS -->
     <div class="sync-bar">
@@ -226,7 +263,7 @@ select:focus{outline:none;border-color:var(--gold);}
   </div>
 </div>
 
-<!-- SETTINGS -->
+<!-- ══════════════ SETTINGS ══════════════ -->
 <div class="screen" id="screen-settings">
   <header>
     <div class="logo">Impostazioni</div>
@@ -234,7 +271,6 @@ select:focus{outline:none;border-color:var(--gold);}
   </header>
   <div class="settings-body">
 
-    <!-- MIO PERSONAGGIO — locale -->
     <div class="field-group">
       <div class="section-title">Il mio personaggio</div>
       <div class="section-subtitle">💾 Salvato solo su questo dispositivo</div>
@@ -253,7 +289,6 @@ select:focus{outline:none;border-color:var(--gold);}
       </div>
     </div>
 
-    <!-- LETTURA -->
     <div class="field-group">
       <div class="section-title">Voce & lettura</div>
       <div class="toggle-row">
@@ -271,16 +306,13 @@ select:focus{outline:none;border-color:var(--gold);}
       </div>
     </div>
 
-    <!-- VOCI PERSONAGGI — condivise -->
     <div class="field-group">
       <div class="section-title">Voci personaggi</div>
-      <div class="section-subtitle">☁️ Condivise con tutto il gruppo — salvate online</div>
+      <div class="section-subtitle">☁️ Condivise con tutto il gruppo</div>
       <div id="roleVoiceList" class="role-list">
-        <div style="color:var(--muted);font-style:italic;font-size:0.88rem;">Carica prima un copione.</div>
+        <div style="color:var(--muted);font-style:italic;font-size:0.88rem;">Nessun copione caricato.</div>
       </div>
-
-      <!-- SALVA CONDIVISO -->
-      <button class="btn-save-shared" id="saveSharedBtn" onclick="saveSharedVoices()" style="display:none;">
+      <button class="btn-save-shared" id="saveSharedBtn" onclick="saveSharedData()" style="display:none;">
         <span id="saveSharedIcon">☁️</span>
         <span id="saveSharedLabel">Salva voci per tutto il gruppo</span>
       </button>
@@ -291,7 +323,7 @@ select:focus{outline:none;border-color:var(--gold);}
   </div>
 </div>
 
-<!-- PLAYER -->
+<!-- ══════════════ PLAYER ══════════════ -->
 <div class="screen" id="screen-player">
   <div class="player-header">
     <div class="play-title" id="playerTitle">Copione</div>
@@ -331,7 +363,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/p
 
 const API_KEY='95cd8576fd89ad9a3c1a090931eaa3cb91ef4c82d79f80b16c2ca3969474763f';
 const EL_MODEL='eleven_multilingual_v2';
-const SHARED_DOC_ID='shared-voices';
+const SHARED_DOC='shared-data';
+const ROLE_COLORS=['#c9a84c','#8b9fd4','#6dbf9e','#d4826d','#b58fd4','#d4c26d','#6db5d4','#d46d9e'];
 
 const VOICES=[
   {id:'pNInz6obpgDQGcFmaJgB',name:'Adam',    g:'M',age:'adulto', tone:'grave',style:['autorevole','serio']},
@@ -358,58 +391,100 @@ const VOICES=[
   {id:'oWAxZDx7w5VEj9dCyTzz',name:'Grace',   g:'F',age:'anziana',tone:'medio',style:['calma','saggia']},
   {id:'ThT5KcBeYPX3keUQqHPh',name:'Dorothy', g:'F',age:'giovane',tone:'medio',style:['giovane','fragile']},
 ];
-
-const ROLE_COLORS=['#c9a84c','#8b9fd4','#6dbf9e','#d4826d','#b58fd4','#d4c26d','#6db5d4','#d46d9e'];
 const STAGE_VOICE_ID=VOICES.find(v=>v.name==='Aria').id;
 
+/* ══ STATE ══ */
 let lines=[],roles=[],roleColors={};
-let roleVoiceId={};
-let roleFilters={};
+let roleVoiceId={},roleFilters={};
 let stageVoiceId=STAGE_VOICE_ID;
 let myChar='',readMyLines=true,readStageDirections=true;
 let speechRate=1.0;
 let currentLine=0,isPlaying=false;
 let fileName='Copione';
-let currentAudio=null;
-let activePreviewBtn=null;
+let currentAudio=null,activePreviewBtn=null;
 let fbReady=false;
-let unsubscribeSnapshot=null;
 
 /* ══ FIREBASE ══ */
-function setSyncStatus(state, label){
-  const dot=document.getElementById('syncDot');
-  const lbl=document.getElementById('syncLabel');
-  dot.className='sync-dot '+state;
-  lbl.textContent=label;
+function setSyncStatus(state,label){
+  document.getElementById('syncDot').className='sync-dot '+state;
+  document.getElementById('syncLabel').textContent=label;
 }
 
-function initFirebase(){
-  if(!window._firebaseReady){
-    window.addEventListener('firebase-ready',()=>initFirebase());
-    return;
-  }
+async function initFirebase(){
+  if(!window._firebaseReady){window.addEventListener('firebase-ready',initFirebase);return;}
   fbReady=true;
-  setSyncStatus('ok','☁️ Database connesso — voci sincronizzate');
-  // Listen for realtime changes from other users
-  if(unsubscribeSnapshot) unsubscribeSnapshot();
-  unsubscribeSnapshot=window._onSnapshot(
-    window._fbDoc(SHARED_DOC_ID),
-    (snap)=>{
-      if(snap.exists()){
-        const data=snap.data();
-        // Only update if we're not the ones who just saved
-        if(data.roleVoiceId) Object.assign(roleVoiceId, data.roleVoiceId);
-        if(data.roleFilters) Object.assign(roleFilters, data.roleFilters);
-        if(data.stageVoiceId) stageVoiceId=data.stageVoiceId;
-        if(roles.length) buildRoleVoiceUI();
-        setSyncStatus('ok','☁️ Voci aggiornate dal gruppo');
+  setSyncStatus('loading','Caricamento copione e voci…');
+  try{
+    const snap=await window._getDoc(window._fbDoc(SHARED_DOC));
+    if(snap.exists()){
+      const data=snap.data();
+      // Restore script
+      if(data.lines && data.lines.length){
+        lines=data.lines;
+        roles=data.roles||[];
+        roleColors=data.roleColors||{};
+        fileName=data.fileName||'Copione';
+        document.getElementById('playerTitle').textContent=fileName;
       }
-    },
-    (err)=>{setSyncStatus('err','⚠ Errore connessione: '+err.message);}
-  );
+      // Restore voices
+      if(data.roleVoiceId) roleVoiceId=data.roleVoiceId;
+      if(data.roleFilters) roleFilters=data.roleFilters;
+      if(data.stageVoiceId) stageVoiceId=data.stageVoiceId;
+    }
+    // Setup realtime listener for voice/script changes
+    window._onSnapshot(window._fbDoc(SHARED_DOC),(snap)=>{
+      if(!snap.exists())return;
+      const data=snap.data();
+      if(data.roleVoiceId) roleVoiceId=Object.assign({},data.roleVoiceId);
+      if(data.roleFilters) roleFilters=Object.assign({},data.roleFilters);
+      if(data.stageVoiceId) stageVoiceId=data.stageVoiceId;
+      if(data.lines&&data.lines.length){
+        lines=data.lines; roles=data.roles||[]; roleColors=data.roleColors||{};
+        fileName=data.fileName||'Copione';
+        document.getElementById('playerTitle').textContent=fileName;
+      }
+      setSyncStatus('ok','☁️ Sincronizzato con il gruppo');
+      updateHomeUI();
+      populateMyCharSelect();
+      if(document.getElementById('screen-settings').classList.contains('active'))buildRoleVoiceUI();
+    });
+    setSyncStatus('ok', lines.length ? '☁️ Copione e voci caricati' : '☁️ Database connesso');
+  }catch(e){
+    setSyncStatus('err','⚠ Errore: '+e.message);
+  }
+  updateHomeUI();
+  populateMyCharSelect();
+  hideLoading();
+  showScreen('screen-home');
 }
 
-async function saveSharedVoices(){
+function updateHomeUI(){
+  const card=document.getElementById('savedScriptCard');
+  const upload=document.getElementById('uploadSection');
+  if(lines.length){
+    card.style.display='block';
+    upload.style.display='none';
+    document.getElementById('savedScriptTitle').textContent=fileName;
+    const roleCount=roles.length;
+    document.getElementById('savedScriptMeta').textContent=
+      roleCount+' personaggi · '+lines.length+' battute';
+  } else {
+    card.style.display='none';
+    upload.style.display='block';
+  }
+}
+
+function showUploadNew(){
+  document.getElementById('savedScriptCard').style.display='none';
+  document.getElementById('uploadSection').style.display='block';
+}
+
+function openSavedScript(){
+  renderScript();
+  showScreen('screen-player');
+}
+
+async function saveSharedData(){
   if(!fbReady){showToast('Database non connesso');return;}
   const btn=document.getElementById('saveSharedBtn');
   const lbl=document.getElementById('saveSharedLabel');
@@ -417,16 +492,14 @@ async function saveSharedVoices(){
   btn.classList.add('saving');
   lbl.textContent='Salvataggio in corso…';
   ico.textContent='⏳';
-  // also save stageVoiceId from select
   stageVoiceId=document.getElementById('stageVoiceSelect').value||STAGE_VOICE_ID;
   try{
-    await window._setDoc(window._fbDoc(SHARED_DOC_ID),{
-      roleVoiceId,
-      roleFilters,
-      stageVoiceId,
-      updatedAt: new Date().toISOString()
+    await window._setDoc(window._fbDoc(SHARED_DOC),{
+      lines, roles, roleColors, fileName,
+      roleVoiceId, roleFilters, stageVoiceId,
+      updatedAt:new Date().toISOString()
     });
-    lbl.textContent='✓ Voci salvate per tutto il gruppo!';
+    lbl.textContent='✓ Salvato per tutto il gruppo!';
     ico.textContent='✅';
     setTimeout(()=>{
       lbl.textContent='Salva voci per tutto il gruppo';
@@ -440,21 +513,19 @@ async function saveSharedVoices(){
   }
 }
 
-/* ══ INIT ══ */
 window.addEventListener('firebase-ready',initFirebase);
 setTimeout(initFirebase,300);
 
 /* ══ NAVIGATION ══ */
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);}
 function goBack(){stopAudio();if(lines.length)showScreen('screen-player');else showScreen('screen-home');}
-function goHome(){stopAudio();isPlaying=false;updatePlayBtn();showScreen('screen-home');}
+function goHome(){stopAudio();isPlaying=false;updatePlayBtn();updateHomeUI();showScreen('screen-home');}
 function goSettings(){stopAudio();isPlaying=false;updatePlayBtn();buildRoleVoiceUI();showScreen('screen-settings');}
 function saveAndPlay(){
   myChar=document.getElementById('myCharSelect').value;
   readMyLines=document.getElementById('readMyLines').checked;
   readStageDirections=document.getElementById('readStageDirections').checked;
   stageVoiceId=document.getElementById('stageVoiceSelect').value||STAGE_VOICE_ID;
-  // save local prefs
   localStorage.setItem('myChar',myChar);
   localStorage.setItem('readMyLines',readMyLines);
   showScreen('screen-player');
@@ -465,36 +536,32 @@ function saveAndPlay(){
 /* ══ SETTINGS UI ══ */
 function populateMyCharSelect(){
   const sel=document.getElementById('myCharSelect');
-  // restore local pref
-  const savedChar=localStorage.getItem('myChar')||'';
+  const saved=localStorage.getItem('myChar')||'';
   sel.innerHTML='<option value="">— Nessuno (spettatore) —</option>'+roles.map(r=>`<option value="${r}">${r}</option>`).join('');
-  if(savedChar&&roles.includes(savedChar)){sel.value=savedChar;myChar=savedChar;}
+  if(saved&&roles.includes(saved)){sel.value=saved;myChar=saved;}
   const savedRead=localStorage.getItem('readMyLines');
   if(savedRead!==null)document.getElementById('readMyLines').checked=savedRead==='true';
   updateMyChar();
 }
-
 function updateMyChar(){
   myChar=document.getElementById('myCharSelect').value;
   document.getElementById('myCharOptions').style.display=myChar?'block':'none';
 }
-
 function buildStageVoiceSelect(){
-  const sel=document.getElementById('stageVoiceSelect');
-  sel.innerHTML=VOICES.map(v=>`<option value="${v.id}" ${v.id===stageVoiceId?'selected':''}>${v.g==='F'?'♀':'♂'} ${v.name} — ${v.style[0]}</option>`).join('');
+  document.getElementById('stageVoiceSelect').innerHTML=VOICES.map(v=>
+    `<option value="${v.id}" ${v.id===stageVoiceId?'selected':''}>${v.g==='F'?'♀':'♂'} ${v.name} — ${v.style[0]}</option>`
+  ).join('');
 }
-
 function buildRoleVoiceUI(){
   buildStageVoiceSelect();
   const container=document.getElementById('roleVoiceList');
   const saveBtn=document.getElementById('saveSharedBtn');
   if(!roles.length){
-    container.innerHTML='<div style="color:var(--muted);font-style:italic;font-size:0.88rem;">Carica prima un copione.</div>';
+    container.innerHTML='<div style="color:var(--muted);font-style:italic;font-size:0.88rem;">Nessun copione caricato.</div>';
     if(saveBtn)saveBtn.style.display='none';
     return;
   }
   if(saveBtn)saveBtn.style.display='flex';
-
   container.innerHTML=roles.map((r,ri)=>{
     const isMe=r===myChar;
     const color=roleColors[r]||'#c9a84c';
@@ -506,7 +573,7 @@ function buildRoleVoiceUI(){
         <div class="role-name-display"><span class="color-swatch" style="background:${color}"></span>${r}</div>
         <div style="display:flex;gap:6px;align-items:center;">
           ${isMe?'<span class="my-char-badge">tu</span>':''}
-          <button class="preview-btn" id="prevbtn-${ri}" onclick="previewRoleVoice('${r}',${ri})" title="Ascolta">▶</button>
+          <button class="preview-btn" id="prevbtn-${ri}" onclick="previewRoleVoice('${r}',${ri})">▶</button>
         </div>
       </div>
       <div class="picker-label">Genere</div>
@@ -546,7 +613,7 @@ function buildRoleVoiceUI(){
           <div class="voice-result-name">${curVoice.g==='F'?'♀':'♂'} ${curVoice.name}</div>
           <div class="voice-result-desc">${curVoice.age} · ${curVoice.tone} · ${curVoice.style.join(', ')}</div>
         </div>
-        <button class="preview-btn" onclick="previewRoleVoice('${r}',${ri})" title="Ascolta">▶</button>
+        <button class="preview-btn" onclick="previewRoleVoice('${r}',${ri})">▶</button>
       </div>
     </div>`;
   }).join('');
@@ -556,36 +623,24 @@ function setFilter(role,key,value,ri){
   if(!roleFilters[role])roleFilters[role]={g:null,age:null,tone:null,style:null};
   roleFilters[role][key]=value;
   const f=roleFilters[role];
-  const ageVariants=f.age?[f.age,f.age==='adulto'?'adulta':f.age==='anziano'?'anziana':f.age]:null;
+  const ageV=f.age?[f.age,f.age==='adulto'?'adulta':f.age==='anziano'?'anziana':f.age]:null;
   const matches=VOICES.filter(v=>{
     if(f.g&&v.g!==f.g)return false;
-    if(ageVariants&&!ageVariants.includes(v.age))return false;
+    if(ageV&&!ageV.includes(v.age))return false;
     if(f.tone&&v.tone!==f.tone)return false;
     if(f.style&&!v.style.includes(f.style))return false;
     return true;
   });
-  const picked=matches.length>0?matches[0]:VOICES[0];
+  const picked=matches[0]||VOICES[0];
   roleVoiceId[role]=picked.id;
   const res=document.getElementById('voiceresult-'+ri);
-  if(res)res.innerHTML=`
-    <div>
-      <div class="voice-result-name">${picked.g==='F'?'♀':'♂'} ${picked.name}</div>
-      <div class="voice-result-desc">${picked.age} · ${picked.tone} · ${picked.style.join(', ')}</div>
-    </div>
-    <button class="preview-btn" onclick="previewRoleVoice('${role}',${ri})" title="Ascolta">▶</button>`;
+  if(res)res.innerHTML=`<div><div class="voice-result-name">${picked.g==='F'?'♀':'♂'} ${picked.name}</div><div class="voice-result-desc">${picked.age} · ${picked.tone} · ${picked.style.join(', ')}</div></div><button class="preview-btn" onclick="previewRoleVoice('${role}',${ri})">▶</button>`;
   buildRoleVoiceUI();
 }
 
 /* ══ PREVIEW ══ */
-async function previewRoleVoice(role,ri){
-  const voiceId=roleVoiceId[role]||VOICES[0].id;
-  const btn=document.getElementById('prevbtn-'+ri);
-  await doPreview(voiceId,btn,'Ciao, questa è la mia voce per il teatro.');
-}
-async function previewStageVoice(){
-  const id=document.getElementById('stageVoiceSelect').value||STAGE_VOICE_ID;
-  await doPreview(id,document.getElementById('previewStageBtn'),'Atto primo. Una sera d\'estate. Il sipario si apre lentamente.');
-}
+async function previewRoleVoice(role,ri){await doPreview(roleVoiceId[role]||VOICES[0].id,document.getElementById('prevbtn-'+ri),'Ciao, questa è la mia voce per il teatro.');}
+async function previewStageVoice(){await doPreview(document.getElementById('stageVoiceSelect').value||STAGE_VOICE_ID,document.getElementById('previewStageBtn'),'Atto primo. Il sipario si apre lentamente.');}
 async function doPreview(voiceId,btn,text){
   stopAudio();
   document.querySelectorAll('.preview-btn').forEach(b=>b.classList.remove('playing'));
@@ -657,17 +712,21 @@ function processText(rawText){
       const speaker=m[1].trim(),text=m[2].trim();
       if(!roles.includes(speaker)){roles.push(speaker);roleColors[speaker]=ROLE_COLORS[(roles.length-1)%ROLE_COLORS.length];}
       lines.push({type:'dialogue',speaker,text});
-    }else{
-      lines.push({type:'stage',speaker:'Scena',text:t});
-    }
+    }else{lines.push({type:'stage',speaker:'Scena',text:t});}
   }
-  // assign default voices alternating M/F
   roles.forEach((r,ri)=>{
     roleFilters[r]={g:ri%2===0?'M':'F',age:null,tone:null,style:null};
     const pool=VOICES.filter(v=>v.g===(ri%2===0?'M':'F'));
     roleVoiceId[r]=(pool[ri%pool.length]||VOICES[0]).id;
   });
-  hideLoading();populateMyCharSelect();buildRoleVoiceUI();renderScript();showScreen('screen-settings');
+  hideLoading();
+  updateHomeUI();
+  populateMyCharSelect();
+  buildRoleVoiceUI();
+  renderScript();
+  // Auto-save to Firebase so the group gets it
+  saveSharedData();
+  showScreen('screen-settings');
 }
 
 function loadDemo(){
@@ -738,8 +797,7 @@ async function speakLine(idx){
     audio.onerror=()=>{currentAudio=null;if(isPlaying)speakLine(idx+1);};
     audio.play();
   }catch(e){
-    setBuffering(false);
-    showToast('⚠ '+e.message);
+    setBuffering(false);showToast('⚠ '+e.message);
     if(isPlaying)setTimeout(()=>speakLine(idx+1),1500);
   }
 }
