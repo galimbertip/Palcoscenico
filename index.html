@@ -162,6 +162,11 @@ select:focus{outline:none;border-color:var(--gold);}
 .player-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
 .play-title{font-family:'Playfair Display',serif;font-size:1.05rem;font-style:italic;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%;}
 .script-container{flex:1;overflow-y:auto;padding:18px;padding-bottom:220px;scroll-behavior:smooth;}
+/* Dimensione carattere — scalata via CSS var */
+#scriptContainer .line-text{font-size:calc(1.02rem * var(--script-scale, 1));}
+#scriptContainer .line-text.stage-action{font-size:calc(0.95rem * var(--script-scale, 1));}
+#scriptContainer .line-text.stage-description{font-size:calc(0.93rem * var(--script-scale, 1));}
+#scriptContainer .line-speaker{font-size:calc(0.74rem * var(--script-scale, 1));}
 
 /* LINE TYPES */
 .line-block{margin-bottom:3px;padding:10px 13px;border-radius:6px;border-left:3px solid transparent;transition:all 0.3s;cursor:pointer;}
@@ -369,7 +374,7 @@ select:focus{outline:none;border-color:var(--gold);}
       <div class="sync-dot loading" id="syncDot"></div>
       <span id="syncLabel">Connessione al database…</span>
     </div>
-    <div class="author-footer">un progetto di <span>Paolo Galimberti</span></div>
+    <div class="author-footer">un progetto di <span>Paolo Galimberti</span> · <span class="app-version-label" style="opacity:0.6;font-size:0.72rem;">V24</span></div>
   </div>
 </div>
 
@@ -428,6 +433,18 @@ select:focus{outline:none;border-color:var(--gold);}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
         <button class="btn-primary" onclick="saveDashboardSettings()">✦ Salva</button>
         <button class="btn-secondary" onclick="goHome()">Annulla</button>
+      </div>
+
+      <div class="field-group" style="margin-top:18px;">
+        <div class="section-title">🔢 Versione app</div>
+        <div class="section-subtitle">Aggiorna dopo ogni rilascio su GitHub</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <span style="font-family:'Playfair Display',serif;font-style:italic;color:var(--gold);font-size:1.3rem;" class="app-version-label">V24</span>
+          <input type="number" id="versionInput" min="1" max="999" placeholder="es. 25"
+            style="width:90px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--cream);padding:8px 12px;font-family:'Cormorant Garamond',serif;font-size:1rem;outline:none;">
+          <button class="preview-btn" onclick="saveVersion()" style="width:auto;padding:0 14px;">✓</button>
+        </div>
+        <div style="font-size:0.72rem;color:var(--muted);font-style:italic;">Inserisci il numero (es. 25) e premi ✓ per aggiornare</div>
       </div>
 
     </div>
@@ -504,6 +521,20 @@ select:focus{outline:none;border-color:var(--gold);}
     <div class="field-group">
       <div class="section-title">Visualizzazione & display</div>
       <div class="section-subtitle">💾 Salvato solo su questo dispositivo</div>
+
+      <!-- Dimensione carattere -->
+      <div class="toggle-row" style="align-items:center;">
+        <div>
+          <div class="toggle-label">Aa Dimensione testo</div>
+          <div class="toggle-desc">Ingrandisce o rimpicciolisce il copione</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="speed-btn" style="width:30px;height:30px;font-size:1rem;" onclick="changeFontSize(-0.1)">−</button>
+          <span id="fontSizeLabel" style="font-size:0.9rem;color:var(--cream2);min-width:38px;text-align:center;">100%</span>
+          <button class="speed-btn" style="width:30px;height:30px;font-size:1rem;" onclick="changeFontSize(+0.1)">+</button>
+        </div>
+      </div>
+
       <div class="toggle-row">
         <div>
           <div class="toggle-label">📜 Scorrimento automatico</div>
@@ -511,19 +542,34 @@ select:focus{outline:none;border-color:var(--gold);}
         </div>
         <label class="toggle"><input type="checkbox" id="autoScroll" checked><span class="toggle-slider"></span></label>
       </div>
-      <div class="toggle-row">
-        <div>
-          <div class="toggle-label">🔊 Riproduzione vocale</div>
-          <div class="toggle-desc">Disattiva per leggere senza consumare crediti audio</div>
-        </div>
-        <label class="toggle"><input type="checkbox" id="voiceEnabled" checked><span class="toggle-slider"></span></label>
-      </div>
+
       <div class="toggle-row">
         <div>
           <div class="toggle-label">💡 Schermo sempre attivo</div>
           <div class="toggle-desc">Impedisce al telefono di bloccarsi durante la recitazione</div>
         </div>
         <label class="toggle"><input type="checkbox" id="wakeLock" checked><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="section-title">Audio & voci</div>
+      <div class="section-subtitle">💾 Salvato solo su questo dispositivo</div>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">🎙 Voci AI <span style="color:var(--muted);font-size:0.76rem;font-style:italic;">(attenzione: crediti audio limitati)</span></div>
+          <div class="toggle-desc">Disattiva per usare le voci di sistema, senza consumare crediti</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="useAiVoice" checked><span class="toggle-slider"></span></label>
+      </div>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">🔊 Riproduzione vocale</div>
+          <div class="toggle-desc">Disattiva per scorrere il copione in silenzio</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="voiceEnabled" checked><span class="toggle-slider"></span></label>
       </div>
     </div>
 
@@ -701,12 +747,12 @@ let lines=[], roles=[], roleColors={};
 let roleVoiceId={}, roleFilters={};
 let actionVoiceId=DEFAULT_ACTION_VOICE;
 let descVoiceId=DEFAULT_DESC_VOICE;
-let myChars=[], readActions=true, readDescriptions=true; // myChars = array fino a 5 ruoli
-let autoScroll=true;       // teleprompter
-let voiceEnabled=true;     // riproduzione vocale
-let wakeLockEnabled=true;  // schermo attivo
-let myLineDisplay='normal';// 'normal' | 'hidden' | 'blackout'
-let _wakeLock=null;        // WakeLock handle
+let myChars=[], readActions=true, readDescriptions=true;
+let autoScroll=true, voiceEnabled=true, wakeLockEnabled=true;
+let myLineDisplay='normal';
+let scriptFontSize=1.0; // scala da 0.7 a 1.6
+let useAiVoice=true;    // true=ElevenLabs, false=voce di sistema
+let _wakeLock=null;
 let speechRate=1.0;
 let currentLine=0, isPlaying=false;
 let fileName='Copione';
@@ -803,6 +849,11 @@ async function saveSharedData(){
 
 window.addEventListener('firebase-ready',initFirebase);
 setTimeout(initFirebase,300);
+// Applica impostazioni locali subito all'avvio
+loadVersion();
+scriptFontSize=parseFloat(localStorage.getItem('scriptFontSize')||'1.0');
+useAiVoice=localStorage.getItem('useAiVoice')!=='false';
+applyFontSize();
 
 /* ══ CORO QUEUE ══ */
 function buildCoroQueue(){
@@ -928,6 +979,9 @@ function goScriptSettings(){
   document.getElementById('autoScroll').checked=autoScroll;
   document.getElementById('voiceEnabled').checked=voiceEnabled;
   document.getElementById('wakeLock').checked=wakeLockEnabled;
+  document.getElementById('useAiVoice').checked=useAiVoice;
+  const fsl=document.getElementById('fontSizeLabel');
+  if(fsl) fsl.textContent=Math.round(scriptFontSize*100)+'%';
   showScreen('screen-script-settings');
 }
 function saveScriptSettings(){
@@ -943,6 +997,9 @@ function saveScriptSettings(){
   localStorage.setItem('voiceEnabled',voiceEnabled);
   wakeLockEnabled=document.getElementById('wakeLock').checked;
   localStorage.setItem('wakeLock',wakeLockEnabled);
+  useAiVoice=document.getElementById('useAiVoice').checked;
+  localStorage.setItem('useAiVoice',useAiVoice);
+  // font size salvato in tempo reale via changeFontSize()
   // GLOBALE
   readActions=document.getElementById('readActions').checked;
   readDescriptions=document.getElementById('readDescriptions').checked;
@@ -976,6 +1033,34 @@ function saveSettingsOnly(){saveScriptSettings();}
 /* ══ SETTINGS UI ══ */
 
 function getMyLineMode(){return localStorage.getItem('myLineMode')||'pause';}
+function saveMyLineMode(v){localStorage.setItem('myLineMode',v);}
+
+function applyFontSize(){
+  document.getElementById('scriptContainer')?.style.setProperty('--script-scale', scriptFontSize);
+}
+function changeFontSize(delta){
+  scriptFontSize=Math.round(Math.max(0.7,Math.min(1.8,scriptFontSize+delta))*10)/10;
+  localStorage.setItem('scriptFontSize',scriptFontSize);
+  applyFontSize();
+  const el=document.getElementById('fontSizeLabel');
+  if(el) el.textContent=Math.round(scriptFontSize*100)+'%';
+}
+
+const APP_VERSION='24';
+function loadVersion(){
+  // Legge la versione salvata (modificabile dall'admin nelle impostazioni)
+  const v=localStorage.getItem('appVersion')||APP_VERSION;
+  document.querySelectorAll('.app-version-label').forEach(el=>el.textContent='V'+v);
+}
+function saveVersion(){
+  const inp=document.getElementById('versionInput');
+  if(!inp) return;
+  const v=inp.value.trim().replace(/^V/i,'');
+  if(!v||isNaN(v)) return showToast('Inserisci un numero valido');
+  localStorage.setItem('appVersion',v);
+  loadVersion();
+  showToast('✓ Versione aggiornata a V'+v);
+}
 
 function populateMyCharSelect(){
   const saved=JSON.parse(localStorage.getItem('myChars')||'[]');
@@ -985,9 +1070,11 @@ function populateMyCharSelect(){
   voiceEnabled   = localStorage.getItem('voiceEnabled')  !== 'false';
   wakeLockEnabled= localStorage.getItem('wakeLock')      !== 'false';
   myLineDisplay  = localStorage.getItem('myLineDisplay') || 'normal';
-  // readActions/readDescriptions: default true se non ancora salvati
-  if(localStorage.getItem('readActions')   !== null) readActions    = localStorage.getItem('readActions')    !== 'false';
+  scriptFontSize = parseFloat(localStorage.getItem('scriptFontSize')||'1.0');
+  useAiVoice     = localStorage.getItem('useAiVoice')    !== 'false';
+  if(localStorage.getItem('readActions')      !== null) readActions    = localStorage.getItem('readActions')    !== 'false';
   if(localStorage.getItem('readDescriptions') !== null) readDescriptions = localStorage.getItem('readDescriptions') !== 'false';
+  applyFontSize();
   buildMyCharSelects();
   const mode=getMyLineMode();
   document.querySelectorAll('input[name="myLineMode"]').forEach(r=>{r.checked=(r.value===mode);});
@@ -1462,6 +1549,11 @@ function updateEngineStatus(){
 }
 
 async function fetchTTS(text, elVoiceId){
+  // Se l'utente ha scelto voce di sistema, salta direttamente
+  if(!useAiVoice){
+    if(ttsEngine!=='system'){ttsEngine='system';updateEngineStatus();}
+    return fetchSystem(text,elVoiceId);
+  }
   // ── 1. ElevenLabs key 1 ──
   if(!elFailed && API_KEY_EL){
     try{
@@ -1601,14 +1693,14 @@ function updateActiveBlock(){
   });
   const activeLine=document.getElementById('line-'+currentLine);
   if(!activeLine) return;
+  const container=document.getElementById('scriptContainer');
   if(autoScroll && isPlaying){
-    // Teleprompter: porta la riga attiva a ~30% dall'alto dello schermo
-    const container=document.getElementById('scriptContainer');
+    // Teleprompter: porta la riga a 35% dall'alto — su OGNI battuta
     const lineTop=activeLine.offsetTop;
-    const offset=container.clientHeight*0.3;
-    container.scrollTo({top:lineTop-offset, behavior:'smooth'});
+    const offset=Math.round(container.clientHeight*0.35);
+    container.scrollTo({top: lineTop - offset, behavior:'smooth'});
   } else {
-    activeLine.scrollIntoView({behavior:'smooth',block:'center'});
+    activeLine.scrollIntoView({behavior:'smooth', block:'center'});
   }
 }
 
