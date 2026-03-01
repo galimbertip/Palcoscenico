@@ -1695,10 +1695,12 @@ function updateActiveBlock(){
   if(!activeLine) return;
   const container=document.getElementById('scriptContainer');
   if(autoScroll && isPlaying){
-    // Teleprompter: porta la riga a 35% dall'alto — su OGNI battuta
-    const lineTop=activeLine.offsetTop;
+    // Posizione della riga rispetto al container (indipendente dai wrapper)
+    const lineRect=activeLine.getBoundingClientRect();
+    const containerRect=container.getBoundingClientRect();
+    const relativeTop=lineRect.top - containerRect.top + container.scrollTop;
     const offset=Math.round(container.clientHeight*0.35);
-    container.scrollTo({top: lineTop - offset, behavior:'smooth'});
+    container.scrollTo({top: relativeTop - offset, behavior:'smooth'});
   } else {
     activeLine.scrollIntoView({behavior:'smooth', block:'center'});
   }
