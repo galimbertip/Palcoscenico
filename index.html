@@ -1314,9 +1314,8 @@ async function fetchTTS(text, elVoiceId){
     }catch(e){
       console.warn('[EL2]',e.message);
       elFailed2=true;
-      showToast(/QUOTA|quota|credit|exceed|limit/i.test(e.message)
-        ?'EL² esaurito → voce di sistema'
-        :'EL² non raggiungibile → voce di sistema');
+      const isQuota=/QUOTA|quota|credit|exceed|limit/i.test(e.message);
+      showToast(isQuota?'EL² esaurito → voce di sistema':'EL² errore: '+e.message.slice(0,60));
     }
   }
   // ── 3. Voci di sistema ──
