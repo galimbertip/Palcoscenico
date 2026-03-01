@@ -51,6 +51,8 @@ body{background:var(--bg);color:var(--cream);font-family:'Cormorant Garamond',se
 body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(90deg,transparent 0px,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);pointer-events:none;z-index:0;}
 .screen{display:none;position:relative;z-index:1;min-height:100vh;}
 .screen.active{display:flex;flex-direction:column;}
+/* Il player è l'unica schermata che deve stare dentro la viewport — lo scroll è nel container interno */
+#screen-player.active{height:100vh;min-height:unset;overflow:hidden;}
 header{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0;}
 .logo{font-family:'Playfair Display',serif;font-size:1.4rem;font-style:italic;color:var(--gold);}
 .logo span{color:var(--cream2);font-style:normal;font-weight:400;font-size:0.75em;}
@@ -1699,14 +1701,11 @@ function updateActiveBlock(teleprompter){
   const activeLine=document.getElementById('line-'+currentLine);
   if(!activeLine) return;
   const container=document.getElementById('scriptContainer');
+  if(!container) return;
   if(autoScroll && teleprompter){
-    // Aspetta il prossimo frame per avere misure corrette dopo il reflow
-    requestAnimationFrame(()=>{
-      const lineRect=activeLine.getBoundingClientRect();
-      const containerRect=container.getBoundingClientRect();
-      const relativeTop=lineRect.top - containerRect.top + container.scrollTop;
-      container.scrollTo({top: relativeTop - Math.round(container.clientHeight*0.35), behavior:'smooth'});
-    });
+    // offsetTop è relativo al container diretto — funziona perché le line-block sono figli diretti
+    const target = activeLine.offsetTop - Math.round(container.clientHeight * 0.35);
+    container.scrollTop = Math.max(0, target);
   } else {
     activeLine.scrollIntoView({behavior:'smooth', block:'center'});
   }
