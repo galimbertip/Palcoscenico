@@ -1418,7 +1418,13 @@ function renderScript(){
 }
 
 /* ══ PLAYBACK ══ */
-function stopAudio(){if(currentAudio){currentAudio.pause();currentAudio=null;}setBuffering(false);}
+let _playGen=0; // token di generazione — si incrementa ad ogni stop/skip per invalidare callback in sospeso
+function stopAudio(){
+  _playGen++; // invalida tutti i callback pendenti
+  if(currentAudio){currentAudio.onended=null;currentAudio.onerror=null;currentAudio.pause();currentAudio=null;}
+  speechSynthesis.cancel();
+  setBuffering(false);
+}
 function setBuffering(b){document.getElementById('bufferingRing').classList.toggle('active',b);}
 async function startPlaying(){
   try{
@@ -1434,102 +1440,90 @@ async function startPlaying(){
 }
 
 async function speakLine(idx){
+  const gen=_playGen;
   if(idx>=lines.length){isPlaying=false;updatePlayBtn();releaseWakeLock();showToast('Copione terminato 🎭');return;}
-  currentLine=idx; updateActiveBlock(); updateProgress();
+  currentLine=idx; updateActiveBlock(true); updateProgress();
   const line=lines[idx];
 
-  const _myChars = JSON.parse(localStorage.getItem('myChars')||'[]');
-  const _mode = getMyLineMode();
-  const _display = localStorage.getItem('myLineDisplay')||'normal';
-  const isMe = line.type==='dialogue' && _myChars.includes(line.speaker);
+  const _myChars=JSON.parse(localStorage.getItem('myChars')||'[]');
+  const _mode=getMyLineMode();
+  const _display=localStorage.getItem('myLineDisplay')||'normal';
+  const isMe=line.type==='dialogue'&&_myChars.includes(line.speaker);
 
-  if(line.type==='action'&&!readActions) return speakLine(idx+1);
-  if(line.type==='description'&&!readDescriptions) return speakLine(idx+1);
+  if(line.type==='action'&&!readActions){if(gen===_playGen)return speakLine(idx+1);return;}
+  if(line.type==='description'&&!readDescriptions){if(gen===_playGen)return speakLine(idx+1);return;}
 
-  // Modalità pausa sulla mia battuta
-  if(isMe && _mode==='pause'){
-    isPlaying=false; updatePlayBtn();
+  if(isMe&&_mode==='pause'){
+    isPlaying=false;updatePlayBtn();
     document.getElementById('currentSpeakerLabel').textContent='🎤 '+line.speaker;
-    updateActiveBlock(); return;
+    return;
   }
-  // Modalità silenziosa sulla mia battuta
-  if(isMe && _mode==='silent'){
-    const ms=Math.max(1000, line.text.length*60);
+  if(isMe&&_mode==='silent'){
     document.getElementById('currentSpeakerLabel').textContent='🔇 '+line.speaker;
-    await new Promise(r=>setTimeout(r,ms));
-    if(isPlaying) speakLine(idx+1); return;
+    await new Promise(r=>setTimeout(r,Math.max(1000,line.text.length*60)));
+    if(gen===_playGen&&isPlaying)speakLine(idx+1);return;
   }
-  // Battuta nascosta/blackout — salta senza audio
-  if(isMe && (_display==='hidden'||_display==='blackout')){
-    const ms=Math.max(800, line.text.length*60);
+  if(isMe&&(_display==='hidden'||_display==='blackout')){
     document.getElementById('currentSpeakerLabel').textContent='🔇 '+line.speaker;
-    await new Promise(r=>setTimeout(r,ms));
-    if(isPlaying) speakLine(idx+1); return;
+    await new Promise(r=>setTimeout(r,Math.max(800,line.text.length*60)));
+    if(gen===_playGen&&isPlaying)speakLine(idx+1);return;
   }
 
   const labels={action:'【 Azione 】',description:'【 Scena 】',coro:'🎭 TUTTI — coro',dialogue:line.speaker};
   document.getElementById('currentSpeakerLabel').textContent=labels[line.type]||line.speaker;
 
-  // Voce disattivata — scorre visivamente con timer proporzionale
   if(!voiceEnabled){
-    const ms=Math.max(800, line.text.length * Math.max(40, 80/speechRate));
-    await new Promise(r=>setTimeout(r,ms));
-    if(isPlaying) speakLine(idx+1); return;
+    await new Promise(r=>setTimeout(r,Math.max(800,line.text.length*Math.max(40,80/speechRate))));
+    if(gen===_playGen&&isPlaying)speakLine(idx+1);return;
   }
 
-  if(line.type==='coro'){await speakCoro(line.text,idx);return;}
+  if(line.type==='coro'){await speakCoro(line.text,idx,gen);return;}
 
-  const voiceId = line.type==='action' ? actionVoiceId
-                : line.type==='description' ? descVoiceId
-                : (roleVoiceId[line.speaker]||VOICES[0].id);
+  const voiceId=line.type==='action'?actionVoiceId
+               :line.type==='description'?descVoiceId
+               :(roleVoiceId[line.speaker]||VOICES[0].id);
 
   setBuffering(true);
   try{
-    if(!isPlaying){setBuffering(false);return;}
+    if(gen!==_playGen){setBuffering(false);return;}
     const audio=await fetchTTS(line.text,voiceId);
-    if(!isPlaying){setBuffering(false);return;}
-    setBuffering(false); currentAudio=audio;
-    audio.onended=()=>{currentAudio=null;if(isPlaying)speakLine(idx+1);};
-    audio.onerror=()=>{currentAudio=null;if(isPlaying)speakLine(idx+1);};
+    if(gen!==_playGen){setBuffering(false);return;}
+    setBuffering(false);currentAudio=audio;
+    audio.onended=()=>{currentAudio=null;if(gen===_playGen&&isPlaying)speakLine(idx+1);};
+    audio.onerror=()=>{currentAudio=null;if(gen===_playGen&&isPlaying)speakLine(idx+1);};
     audio.play();
   }catch(e){
-    setBuffering(false); showToast('⚠ '+e.message);
-    if(isPlaying) setTimeout(()=>speakLine(idx+1),1500);
+    setBuffering(false);
+    if(gen!==_playGen)return;
+    showToast('⚠ '+e.message);
+    setTimeout(()=>{if(gen===_playGen&&isPlaying)speakLine(idx+1);},1500);
   }
 }
 
-/* CORO — play same text with multiple voices in sequence */
-async function speakCoro(text, lineIdx){
-  if(!coroVoiceQueue.length){return speakLine(lineIdx+1);}
+/* CORO */
+async function speakCoro(text,lineIdx,gen){
+  if(!coroVoiceQueue.length){if(gen===_playGen)speakLine(lineIdx+1);return;}
   const voicesToUse=coroVoiceQueue.slice(0,Math.min(4,coroVoiceQueue.length));
-  
   async function playNext(i){
-    if(!isPlaying||i>=voicesToUse.length){
-      currentAudio=null;
-      if(isPlaying) speakLine(lineIdx+1);
-      return;
-    }
+    if(gen!==_playGen||!isPlaying){currentAudio=null;return;}
+    if(i>=voicesToUse.length){speakLine(lineIdx+1);return;}
     const vname=VOICES.find(v=>v.id===voicesToUse[i])?.name||'';
     document.getElementById('currentSpeakerLabel').textContent=`🎭 TUTTI (${i+1}/${voicesToUse.length} — ${vname})`;
     setBuffering(true);
     try{
       const audio=await fetchTTS(text,voicesToUse[i]);
-      if(!isPlaying){setBuffering(false);return;}
-      setBuffering(false); currentAudio=audio;
-      audio.onended=()=>{
-        currentAudio=null;
-        // Small pause between coro voices
-        setTimeout(()=>playNext(i+1), 300);
-      };
-      audio.onerror=()=>{currentAudio=null;playNext(i+1);};
+      if(gen!==_playGen){setBuffering(false);return;}
+      setBuffering(false);currentAudio=audio;
+      audio.onended=()=>{currentAudio=null;if(gen===_playGen&&isPlaying)playNext(i+1);};
+      audio.onerror=()=>{currentAudio=null;if(gen===_playGen&&isPlaying)playNext(i+1);};
       audio.play();
     }catch(e){
       setBuffering(false);
-      playNext(i+1);
+      if(gen!==_playGen)return;
+      if(isPlaying)setTimeout(()=>{if(gen===_playGen)playNext(i+1);},800);
     }
   }
   playNext(0);
-}
 
 /* ══════════════════════════════════════
    TTS — FALLBACK
@@ -1685,7 +1679,7 @@ function updatePlayBtn(){
   const btn=document.getElementById('playBtn');
   if(btn) btn.textContent=isPlaying?'⏸':'▶';
 }
-function updateActiveBlock(){
+function updateActiveBlock(teleprompter){
   document.querySelectorAll('.line-block').forEach((el,i)=>{
     el.classList.remove('active','past');
     if(i<currentLine) el.classList.add('past');
@@ -1694,13 +1688,11 @@ function updateActiveBlock(){
   const activeLine=document.getElementById('line-'+currentLine);
   if(!activeLine) return;
   const container=document.getElementById('scriptContainer');
-  if(autoScroll && isPlaying){
-    // Posizione della riga rispetto al container (indipendente dai wrapper)
+  if(autoScroll && teleprompter){
     const lineRect=activeLine.getBoundingClientRect();
     const containerRect=container.getBoundingClientRect();
     const relativeTop=lineRect.top - containerRect.top + container.scrollTop;
-    const offset=Math.round(container.clientHeight*0.35);
-    container.scrollTo({top: relativeTop - offset, behavior:'smooth'});
+    container.scrollTo({top: relativeTop - Math.round(container.clientHeight*0.35), behavior:'smooth'});
   } else {
     activeLine.scrollIntoView({behavior:'smooth', block:'center'});
   }
