@@ -1155,7 +1155,10 @@ function renderScript(){
 /* ══ PLAYBACK ══ */
 function stopAudio(){if(currentAudio){currentAudio.pause();currentAudio=null;}setBuffering(false);}
 function setBuffering(b){document.getElementById('bufferingRing').classList.toggle('active',b);}
-function startPlaying(){isPlaying=true;updatePlayBtn();speakLine(currentLine);}
+function startPlaying(){
+  elFailed=false; elFailed2=false; // reset fallback ad ogni nuova sessione
+  isPlaying=true; updatePlayBtn(); speakLine(currentLine);
+}
 
 async function speakLine(idx){
   if(idx>=lines.length){isPlaying=false;updatePlayBtn();showToast('Copione terminato 🎭');return;}
@@ -1377,6 +1380,7 @@ function stopAndReset(){
   stopAudio();
   isPlaying=false;
   currentLine=0;
+  elFailed=false; elFailed2=false; // reset così riparte da EL¹ al prossimo play
   updatePlayBtn();
   updateActiveBlock();
   updateProgress();
