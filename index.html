@@ -375,45 +375,86 @@ select:focus{outline:none;border-color:var(--gold);}
   </div>
 </div>
 
-<!-- SETTINGS -->
+<!-- IMPOSTAZIONI DASHBOARD (API key, protette da password) -->
 <div class="screen" id="screen-settings">
   <header>
     <div class="logo">Impostazioni</div>
-    <button class="header-btn" onclick="goBack()">← Indietro</button>
+    <button class="header-btn" onclick="goHome()">← Indietro</button>
+  </header>
+  <div class="settings-body">
+
+    <!-- PASSWORD LOCK -->
+    <div id="settingsLock" style="display:flex;flex-direction:column;align-items:center;gap:16px;padding:40px 0;">
+      <div style="font-size:2.2rem;">🔒</div>
+      <div style="font-family:'Playfair Display',serif;font-style:italic;color:var(--gold);font-size:1.1rem;">Area protetta</div>
+      <div style="font-size:0.85rem;color:var(--muted);text-align:center;font-style:italic;">Inserisci la password per accedere alle impostazioni</div>
+      <input type="password" id="settingsPassword" placeholder="Password…"
+        style="width:100%;max-width:300px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--cream);padding:11px 14px;font-family:'Cormorant Garamond',serif;font-size:1rem;outline:none;text-align:center;"
+        onkeydown="if(event.key==='Enter')unlockSettings()">
+      <button class="btn-primary" style="max-width:300px;" onclick="unlockSettings()">✦ Accedi</button>
+    </div>
+
+    <!-- CONTENUTO (nascosto finché non si sblocca) -->
+    <div id="settingsContent" style="display:none;">
+
+      <div class="field-group">
+        <div class="section-title">🔑 API Key ElevenLabs</div>
+        <div class="section-subtitle">☁️ Condivise con tutto il gruppo via Firebase</div>
+        <label class="field-label">Account 1</label>
+        <input type="password" id="setupApiKey" placeholder="Incolla la key…"
+          style="width:100%;background:var(--bg3);border:1px solid var(--gold);border-radius:6px;color:var(--cream);padding:11px 14px;font-family:'Cormorant Garamond',serif;font-size:0.9rem;margin-bottom:6px;outline:none;">
+        <div style="font-size:0.73rem;color:var(--muted);font-style:italic;margin-bottom:14px;">elevenlabs.io → Profilo → API Keys</div>
+        <label class="field-label">Account 2 <span style="color:var(--muted);font-size:0.78rem;">(opzionale — fallback)</span></label>
+        <input type="password" id="setupApiKey2" placeholder="Seconda key per fallback automatico…"
+          style="width:100%;background:var(--bg3);border:1px solid rgba(201,168,76,0.3);border-radius:6px;color:var(--cream);padding:11px 14px;font-family:'Cormorant Garamond',serif;font-size:0.9rem;margin-bottom:6px;outline:none;">
+        <div style="font-size:0.73rem;color:var(--muted);font-style:italic;">Se la prima esaurisce i crediti, l'app passa automaticamente alla seconda</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+        <button class="btn-primary" onclick="saveDashboardSettings()">✦ Salva</button>
+        <button class="btn-secondary" onclick="goHome()">Annulla</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- IMPOSTAZIONI COPIONE (personaggi, voci, skip — dal player) -->
+<div class="screen" id="screen-script-settings">
+  <header>
+    <div class="logo">Impostazioni copione</div>
+    <button class="header-btn" onclick="cancelScriptSettings()">← Indietro</button>
   </header>
   <div class="settings-body">
 
     <div class="field-group">
       <div class="section-title">I miei personaggi</div>
       <div class="section-subtitle">💾 Salvato solo su questo dispositivo — fino a 5 ruoli</div>
-      <div id="myCharSelects" style="display:flex;flex-direction:column;gap:8px;">
-        <!-- generati da JS -->
-      </div>
+      <div id="myCharSelects" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
+
     <div id="myCharOptions" style="display:none;margin-bottom:20px;">
-      <div style="margin-bottom:8px;">
-        <div class="field-label">Quando arriva la mia battuta</div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px;" id="myLineMode">
-        <label style="display:flex;align-items:flex-start;gap:11px;padding:11px 13px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;cursor:pointer;" id="mode-read-label">
+      <div class="field-label" style="margin-bottom:8px;">Quando arriva la mia battuta</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <label style="display:flex;align-items:flex-start;gap:11px;padding:11px 13px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;cursor:pointer;">
           <input type="radio" name="myLineMode" value="read" style="margin-top:3px;accent-color:var(--gold);" onchange="saveMyLineMode(this.value)">
           <div>
             <div style="font-size:0.92rem;color:var(--cream2);">Leggi normalmente</div>
             <div style="font-size:0.77rem;color:var(--muted);font-style:italic;">L'app legge le tue battute come le altre</div>
           </div>
         </label>
-        <label style="display:flex;align-items:flex-start;gap:11px;padding:11px 13px;background:var(--bg3);border:1px solid var(--crimson);border-radius:7px;cursor:pointer;" id="mode-pause-label">
+        <label style="display:flex;align-items:flex-start;gap:11px;padding:11px 13px;background:var(--bg3);border:1px solid var(--crimson);border-radius:7px;cursor:pointer;">
           <input type="radio" name="myLineMode" value="pause" style="margin-top:3px;accent-color:var(--crimson2);" onchange="saveMyLineMode(this.value)">
           <div>
             <div style="font-size:0.92rem;color:var(--cream2);">⏸ Metti in pausa</div>
             <div style="font-size:0.77rem;color:var(--muted);font-style:italic;">L'app si ferma — reciti tu, poi premi ▶ per continuare</div>
           </div>
         </label>
-        <label style="display:flex;align-items:flex-start;gap:11px;padding:11px 13px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;cursor:pointer;" id="mode-silent-label">
+        <label style="display:flex;align-items:flex-start;gap:11px;padding:11px 13px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;cursor:pointer;">
           <input type="radio" name="myLineMode" value="silent" style="margin-top:3px;accent-color:var(--gold);" onchange="saveMyLineMode(this.value)">
           <div>
             <div style="font-size:0.92rem;color:var(--cream2);">🔇 Leggi in silenzio</div>
-            <div style="font-size:0.77rem;color:var(--muted);font-style:italic;">L'app legge sottovoce le tue battute e va avanti da sola</div>
+            <div style="font-size:0.77rem;color:var(--muted);font-style:italic;">L'app aspetta la durata della battuta e va avanti da sola</div>
           </div>
         </label>
       </div>
@@ -421,11 +462,10 @@ select:focus{outline:none;border-color:var(--gold);}
 
     <div class="field-group">
       <div class="section-title">Voce & lettura</div>
-      <div class="section-subtitle">💾 Salvato solo su questo dispositivo</div>
-      <!-- Skip back/fwd -->
+      <div class="section-subtitle">☁️ Condiviso con tutto il gruppo</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
         <div>
-          <label class="field-label">⏪ Righe indietro</label>
+          <label class="field-label">◀◀ Righe indietro</label>
           <div style="display:flex;align-items:center;gap:8px;">
             <button class="speed-btn" onclick="changeSkip('back',-1)">−</button>
             <span style="font-size:0.95rem;color:var(--cream2);min-width:24px;text-align:center;" id="skipBackSetting">3</span>
@@ -433,7 +473,7 @@ select:focus{outline:none;border-color:var(--gold);}
           </div>
         </div>
         <div>
-          <label class="field-label">⏩ Righe avanti</label>
+          <label class="field-label">▶▶ Righe avanti</label>
           <div style="display:flex;align-items:center;gap:8px;">
             <button class="speed-btn" onclick="changeSkip('fwd',-1)">−</button>
             <span style="font-size:0.95rem;color:var(--cream2);min-width:24px;text-align:center;" id="skipFwdSetting">3</span>
@@ -459,12 +499,12 @@ select:focus{outline:none;border-color:var(--gold);}
       <label class="field-label">Voce azioni (grassetto)</label>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
         <select id="actionVoiceSelect" style="flex:1;"></select>
-        <button class="preview-btn" onclick="previewSpecialVoice('action')" title="Anteprima">▶</button>
+        <button class="preview-btn" onclick="previewSpecialVoice('action')">▶</button>
       </div>
       <label class="field-label">Voce descrizioni (corsivo)</label>
       <div style="display:flex;gap:8px;align-items:center;">
         <select id="descVoiceSelect" style="flex:1;"></select>
-        <button class="preview-btn" onclick="previewSpecialVoice('desc')" title="Anteprima">▶</button>
+        <button class="preview-btn" onclick="previewSpecialVoice('desc')">▶</button>
       </div>
     </div>
 
@@ -474,18 +514,13 @@ select:focus{outline:none;border-color:var(--gold);}
       <div id="roleVoiceList" class="role-list">
         <div style="color:var(--muted);font-style:italic;font-size:0.88rem;">Nessun copione caricato.</div>
       </div>
-      <button class="btn-save-shared" id="saveSharedBtn" onclick="saveSharedData()" style="display:none;">
-        <span id="saveSharedIcon">☁️</span>
-        <span id="saveSharedLabel">Salva per tutto il gruppo</span>
-      </button>
     </div>
 
-    <button class="btn-primary" onclick="saveAndPlay()">✦ Inizia la lettura</button>
-    <button class="btn-secondary" onclick="saveSettingsOnly()" style="background:rgba(201,168,76,0.08);border-color:var(--gold);color:var(--gold);">💾 Salva impostazioni</button>
-    <button class="btn-secondary" onclick="goBack()">Annulla</button>
-    <button onclick="openSetup()" style="width:100%;margin-top:8px;background:none;border:none;color:var(--muted);font-family:'Cormorant Garamond',serif;font-size:0.82rem;font-style:italic;cursor:pointer;padding:8px;text-decoration:underline;text-underline-offset:3px;">
-      🔑 Cambia API key ElevenLabs
-    </button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+      <button class="btn-primary" onclick="saveScriptSettings()">✦ Salva</button>
+      <button class="btn-secondary" onclick="cancelScriptSettings()">Annulla</button>
+    </div>
+
   </div>
 </div>
 
@@ -494,7 +529,7 @@ select:focus{outline:none;border-color:var(--gold);}
   <div class="player-header">
     <div class="play-title" id="playerTitle">Copione</div>
     <div style="display:flex;gap:8px;">
-      <button class="header-btn" onclick="goSettings()">⚙</button>
+      <button class="header-btn" onclick="goScriptSettings()">⚙</button>
       <button class="header-btn" onclick="goHome()">✕</button>
     </div>
   </div>
@@ -663,14 +698,6 @@ async function saveApiKey(){
     setTimeout(()=>showScreen('screen-home'),800);
   }catch(e){showToast('Errore salvataggio: '+e.message);}
 }
-function openSetup(){
-  showScreen('screen-setup');
-  // Pre-popola con le key già salvate (mostrate oscurate)
-  const k1=document.getElementById('setupApiKey');
-  const k2=document.getElementById('setupApiKey2');
-  if(k1&&API_KEY_EL) k1.value=API_KEY_EL;
-  if(k2&&API_KEY_EL2) k2.value=API_KEY_EL2;
-}
 function skipApiKey(){API_KEY_EL='';elFailed=true;showScreen('screen-home');}
 
 function applySlotData(data){
@@ -691,19 +718,13 @@ function applySlotData(data){
 async function saveSharedData(){
   if(!fbReady){showToast('Database non connesso');return;}
   if(!activeSlot){showToast('Nessuno slot attivo');return;}
-  const btn=document.getElementById('saveSharedBtn');
-  const lbl=document.getElementById('saveSharedLabel');
-  const ico=document.getElementById('saveSharedIcon');
-  btn.classList.add('saving'); lbl.textContent='Salvataggio…'; ico.textContent='⏳';
   actionVoiceId=document.getElementById('actionVoiceSelect')?.value||DEFAULT_ACTION_VOICE;
   descVoiceId=document.getElementById('descVoiceSelect')?.value||DEFAULT_DESC_VOICE;
   try{
     const data={lines,roles,roleColors,fileName,roleVoiceId,roleFilters,actionVoiceId,descVoiceId,updatedAt:new Date().toISOString()};
     await window._setDoc(window._fbDoc(activeSlot),data);
     slotsData[activeSlot]=data;
-    lbl.textContent='✓ Salvato per tutto il gruppo!'; ico.textContent='✅';
-    setTimeout(()=>{lbl.textContent='Salva per tutto il gruppo';ico.textContent='☁️';btn.classList.remove('saving');},2500);
-  }catch(e){lbl.textContent='Errore: '+e.message;ico.textContent='⚠';btn.classList.remove('saving');}
+  }catch(e){showToast('Errore salvataggio: '+e.message);}
 }
 
 window.addEventListener('firebase-ready',initFirebase);
@@ -781,40 +802,90 @@ function showScreen(id){
 }
 function goBack(){stopAudio();if(lines.length)showScreen('screen-player');else showScreen('screen-home');}
 function goHome(){stopAudio();isPlaying=false;updatePlayBtn();renderSlots();showScreen('screen-home');}
+
+// Impostazioni dashboard (con lock password)
 function goSettings(){
-  stopAudio(); isPlaying=false; updatePlayBtn();
-  buildRoleVoiceUI(); initSkipLabels();
-  // Ripristina radio myLineMode dal localStorage
-  const mode=getMyLineMode();
-  document.querySelectorAll('input[name="myLineMode"]').forEach(r=>{r.checked=(r.value===mode);});
+  document.getElementById('settingsLock').style.display='flex';
+  document.getElementById('settingsContent').style.display='none';
+  document.getElementById('settingsPassword').value='';
   showScreen('screen-settings');
 }
-function saveAndPlay(){
-  updateMyChar(); // assicura myChars aggiornato
+function unlockSettings(){
+  const pwd=document.getElementById('settingsPassword').value;
+  if(pwd==='palcoscenico'){
+    document.getElementById('settingsLock').style.display='none';
+    document.getElementById('settingsContent').style.display='block';
+    // Pre-popola key esistenti
+    const k1=document.getElementById('setupApiKey');
+    const k2=document.getElementById('setupApiKey2');
+    if(k1&&API_KEY_EL) k1.value=API_KEY_EL;
+    if(k2&&API_KEY_EL2) k2.value=API_KEY_EL2;
+  } else {
+    showToast('Password errata');
+    document.getElementById('settingsPassword').value='';
+  }
+}
+async function saveDashboardSettings(){
+  const key=document.getElementById('setupApiKey').value.trim();
+  const key2=document.getElementById('setupApiKey2').value.trim();
+  if(!key){showToast('Inserisci almeno la prima API key');return;}
+  try{
+    const cfg={elKey:key,updatedAt:new Date().toISOString()};
+    if(key2) cfg.elKey2=key2;
+    await window._setDoc(window._fbDoc('config'),cfg);
+    API_KEY_EL=key; API_KEY_EL2=key2||'';
+    elFailed=false; elFailed2=false;
+    showToast(key2?'✓ Due API key salvate!':'✓ API key salvata!');
+    setTimeout(()=>goHome(),800);
+  }catch(e){showToast('Errore: '+e.message);}
+}
+
+// Impostazioni copione (dal player)
+function goScriptSettings(){
+  stopAudio(); isPlaying=false; updatePlayBtn();
+  buildRoleVoiceUI(); initSkipLabels();
+  const mode=getMyLineMode();
+  document.querySelectorAll('input[name="myLineMode"]').forEach(r=>{r.checked=(r.value===mode);});
+  // Ripristina toggle
+  document.getElementById('readActions').checked=readActions;
+  document.getElementById('readDescriptions').checked=readDescriptions;
+  showScreen('screen-script-settings');
+}
+function saveScriptSettings(){
+  // LOCALE — personaggi e modalità battuta
+  updateMyChar();
+  const mode=document.querySelector('input[name="myLineMode"]:checked')?.value||'pause';
+  localStorage.setItem('myLineMode',mode);
+  // GLOBALE — voci, skip, toggle lettura
   readActions=document.getElementById('readActions').checked;
   readDescriptions=document.getElementById('readDescriptions').checked;
+  actionVoiceId=document.getElementById('actionVoiceSelect')?.value||DEFAULT_ACTION_VOICE;
+  descVoiceId=document.getElementById('descVoiceSelect')?.value||DEFAULT_DESC_VOICE;
+  localStorage.setItem('readActions',readActions);
+  localStorage.setItem('readDescriptions',readDescriptions);
+  saveSharedData(); // salva voci personaggi su Firebase
+  showToast('✓ Impostazioni salvate');
+  setTimeout(()=>showScreen('screen-player'),600);
+}
+function cancelScriptSettings(){
+  showScreen('screen-player');
+}
+// usato dopo caricamento copione (da processHTML/loadDemo)
+function saveAndPlay(){
+  updateMyChar();
+  readActions=document.getElementById('readActions')?.checked??true;
+  readDescriptions=document.getElementById('readDescriptions')?.checked??true;
   actionVoiceId=document.getElementById('actionVoiceSelect')?.value||DEFAULT_ACTION_VOICE;
   descVoiceId=document.getElementById('descVoiceSelect')?.value||DEFAULT_DESC_VOICE;
   stopAudio(); isPlaying=false; currentLine=0;
   showScreen('screen-player');
   renderScript();
-  startPlaying();
 }
+// compat legacy
+function openSetup(){goSettings();}
+function saveSettingsOnly(){saveScriptSettings();}
 
 /* ══ SETTINGS UI ══ */
-function saveSettingsOnly(){
-  // Salva tutto il locale senza avviare la riproduzione
-  updateMyChar();
-  readActions=document.getElementById('readActions').checked;
-  readDescriptions=document.getElementById('readDescriptions').checked;
-  actionVoiceId=document.getElementById('actionVoiceSelect')?.value||DEFAULT_ACTION_VOICE;
-  descVoiceId=document.getElementById('descVoiceSelect')?.value||DEFAULT_DESC_VOICE;
-  const mode=document.querySelector('input[name="myLineMode"]:checked')?.value||'pause';
-  localStorage.setItem('myLineMode', mode);
-  localStorage.setItem('readActions', readActions);
-  localStorage.setItem('readDescriptions', readDescriptions);
-  showToast('✓ Impostazioni salvate');
-}
 
 function getMyLineMode(){return localStorage.getItem('myLineMode')||'pause';}
 
@@ -875,13 +946,10 @@ function buildSpecialVoiceSelects(){
 function buildRoleVoiceUI(){
   buildSpecialVoiceSelects();
   const container=document.getElementById('roleVoiceList');
-  const saveBtn=document.getElementById('saveSharedBtn');
   if(!roles.length){
     container.innerHTML='<div style="color:var(--muted);font-style:italic;font-size:0.88rem;">Nessun copione caricato.</div>';
-    if(saveBtn) saveBtn.style.display='none';
     return;
   }
-  if(saveBtn) saveBtn.style.display='flex';
 
   container.innerHTML=roles.map((r,ri)=>{
     const isMe=myChars.includes(r);
@@ -1076,7 +1144,6 @@ function processHTML(html){
   });
   buildCoroQueue();
   hideLoading();
-  // Salva nel giusto slot e vai alle impostazioni
   const slot=uploadTargetSlot||SLOTS[0];
   activeSlot=slot;
   closeUploadOverlay();
@@ -1084,7 +1151,10 @@ function processHTML(html){
   buildRoleVoiceUI();
   renderScript();
   saveSharedData();
-  showScreen('screen-settings');
+  // Va alle impostazioni copione per configurare le voci prima di iniziare
+  buildSpecialVoiceSelects();
+  initSkipLabels();
+  showScreen('screen-script-settings');
 }
 
 /* ══ DEMO ══ */
@@ -1121,7 +1191,9 @@ function loadDemo(){
   buildRoleVoiceUI();
   renderScript();
   saveSharedData();
-  showScreen('screen-settings');
+  buildSpecialVoiceSelects();
+  initSkipLabels();
+  showScreen('screen-script-settings');
 }
 
 /* ══ RENDER ══ */
