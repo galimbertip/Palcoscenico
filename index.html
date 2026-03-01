@@ -293,11 +293,17 @@ select:focus{outline:none;border-color:var(--gold);}
       Verrà salvata sul database condiviso — <em>tutti i dispositivi del gruppo la useranno automaticamente, senza doverla reinserire.</em>
     </p>
     <div style="width:100%;">
-      <label class="field-label">API Key ElevenLabs</label>
+      <label class="field-label">API Key ElevenLabs — Account 1</label>
       <input type="password" id="setupApiKey" placeholder="Incolla qui la tua key..." 
         style="width:100%;background:var(--bg3);border:1px solid var(--gold);border-radius:6px;color:var(--cream);padding:12px 14px;font-family:'Cormorant Garamond',serif;font-size:0.95rem;margin-bottom:6px;outline:none;">
-      <div style="font-size:0.75rem;color:var(--muted);font-style:italic;margin-bottom:18px;">
+      <div style="font-size:0.75rem;color:var(--muted);font-style:italic;margin-bottom:14px;">
         Trovala su: elevenlabs.io → Il tuo profilo → API Keys
+      </div>
+      <label class="field-label">API Key ElevenLabs — Account 2 <span style="color:var(--muted);font-size:0.8rem;">(opzionale — fallback)</span></label>
+      <input type="password" id="setupApiKey2" placeholder="Seconda key per quando la prima è esaurita..." 
+        style="width:100%;background:var(--bg3);border:1px solid rgba(201,168,76,0.3);border-radius:6px;color:var(--cream);padding:12px 14px;font-family:'Cormorant Garamond',serif;font-size:0.95rem;margin-bottom:6px;outline:none;">
+      <div style="font-size:0.75rem;color:var(--muted);font-style:italic;margin-bottom:18px;">
+        Se la prima key esaurisce i crediti, l'app passa automaticamente alla seconda
       </div>
       <button class="btn-primary" onclick="saveApiKey()">✦ Salva e continua</button>
       <button class="btn-secondary" onclick="skipApiKey()">Continua senza (solo voci di sistema)</button>
@@ -474,7 +480,7 @@ select:focus{outline:none;border-color:var(--gold);}
     <button class="btn-primary" onclick="saveAndPlay()">✦ Inizia la lettura</button>
     <button class="btn-secondary" onclick="saveSettingsOnly()" style="background:rgba(201,168,76,0.08);border-color:var(--gold);color:var(--gold);">💾 Salva impostazioni</button>
     <button class="btn-secondary" onclick="goBack()">Annulla</button>
-    <button onclick="showScreen('screen-setup')" style="width:100%;margin-top:8px;background:none;border:none;color:var(--muted);font-family:'Cormorant Garamond',serif;font-size:0.82rem;font-style:italic;cursor:pointer;padding:8px;text-decoration:underline;text-underline-offset:3px;">
+    <button onclick="openSetup()" style="width:100%;margin-top:8px;background:none;border:none;color:var(--muted);font-family:'Cormorant Garamond',serif;font-size:0.82rem;font-style:italic;cursor:pointer;padding:8px;text-decoration:underline;text-underline-offset:3px;">
       🔑 Cambia API key ElevenLabs
     </button>
   </div>
@@ -531,7 +537,8 @@ select:focus{outline:none;border-color:var(--gold);}
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-let API_KEY_EL=''; // caricata da Firebase, mai nel codice
+let API_KEY_EL='';  // key 1 — caricata da Firebase
+let API_KEY_EL2=''; // key 2 — caricata da Firebase (opzionale)
 const EL_MODEL='eleven_multilingual_v2';
 const ROLE_COLORS=['#c9a84c','#8b9fd4','#6dbf9e','#d4826d','#b58fd4','#d4c26d','#6db5d4','#d46d9e'];
 
@@ -602,7 +609,8 @@ async function initFirebase(){
   setSyncStatus('loading','Caricamento…');
   try{
     const cfgSnap=await window._getDoc(window._fbDoc('config'));
-    if(cfgSnap.exists()&&cfgSnap.data().elKey) API_KEY_EL=cfgSnap.data().elKey;
+    if(cfgSnap.exists()&&cfgSnap.data().elKey)  API_KEY_EL =cfgSnap.data().elKey;
+    if(cfgSnap.exists()&&cfgSnap.data().elKey2) API_KEY_EL2=cfgSnap.data().elKey2;
     for(const slot of SLOTS){
       const snap=await window._getDoc(window._fbDoc(slot));
       if(snap.exists()) slotsData[slot]=snap.data();
@@ -629,12 +637,26 @@ async function initFirebase(){
 
 async function saveApiKey(){
   const key=document.getElementById('setupApiKey').value.trim();
-  if(!key){showToast('Inserisci la API key');return;}
+  const key2=document.getElementById('setupApiKey2').value.trim();
+  if(!key){showToast('Inserisci almeno la prima API key');return;}
   try{
-    await window._setDoc(window._fbDoc('config'),{elKey:key,updatedAt:new Date().toISOString()});
-    API_KEY_EL=key; showToast('✓ API key salvata!');
+    const cfg={elKey:key, updatedAt:new Date().toISOString()};
+    if(key2) cfg.elKey2=key2;
+    await window._setDoc(window._fbDoc('config'),cfg);
+    API_KEY_EL=key;
+    API_KEY_EL2=key2||'';
+    elFailed=false; elFailed2=false; // reset fallback
+    showToast(key2?'✓ Due API key salvate!':'✓ API key salvata!');
     setTimeout(()=>showScreen('screen-home'),800);
   }catch(e){showToast('Errore salvataggio: '+e.message);}
+}
+function openSetup(){
+  showScreen('screen-setup');
+  // Pre-popola con le key già salvate (mostrate oscurate)
+  const k1=document.getElementById('setupApiKey');
+  const k2=document.getElementById('setupApiKey2');
+  if(k1&&API_KEY_EL) k1.value=API_KEY_EL;
+  if(k2&&API_KEY_EL2) k2.value=API_KEY_EL2;
 }
 function skipApiKey(){API_KEY_EL='';elFailed=true;showScreen('screen-home');}
 
@@ -1234,38 +1256,54 @@ async function speakCoro(text, lineIdx){
 ══════════════════════════════════════ */
 let ttsEngine='elevenlabs';
 let elFailed=false;
+let elFailed2=false; // seconda key
 
 function updateEngineStatus(){
-  const labels={elevenlabs:'🎙 EL',system:'📢 SYS'};
   const el=document.getElementById('engineLabel');
-  if(el) el.textContent=labels[ttsEngine]||ttsEngine;
+  if(!el) return;
+  if(ttsEngine==='elevenlabs') el.textContent='🎙 EL¹';
+  else if(ttsEngine==='elevenlabs2') el.textContent='🎙 EL²';
+  else el.textContent='📢 SYS';
 }
 
 async function fetchTTS(text, elVoiceId){
-  // ── 1. ElevenLabs ──
-  if(!elFailed){
+  // ── 1. ElevenLabs key 1 ──
+  if(!elFailed && API_KEY_EL){
     try{
-      const audio=await fetchEL(text,elVoiceId);
+      const audio=await fetchEL(text,elVoiceId,API_KEY_EL);
       if(ttsEngine!=='elevenlabs'){ttsEngine='elevenlabs';updateEngineStatus();}
       return audio;
     }catch(e){
-      console.warn('[EL]',e.message);
+      console.warn('[EL1]',e.message);
       elFailed=true;
       showToast(/QUOTA|quota|credit|exceed|limit/i.test(e.message)
-        ?'ElevenLabs esaurito → voce di sistema'
-        :'ElevenLabs non raggiungibile → voce di sistema');
+        ?'EL¹ esaurito → provo EL²…'
+        :'EL¹ non raggiungibile → provo EL²…');
     }
   }
-
-  // ── 2. Voci di sistema (sempre disponibile) ──
+  // ── 2. ElevenLabs key 2 ──
+  if(!elFailed2 && API_KEY_EL2){
+    try{
+      const audio=await fetchEL(text,elVoiceId,API_KEY_EL2);
+      if(ttsEngine!=='elevenlabs2'){ttsEngine='elevenlabs2';updateEngineStatus();}
+      return audio;
+    }catch(e){
+      console.warn('[EL2]',e.message);
+      elFailed2=true;
+      showToast(/QUOTA|quota|credit|exceed|limit/i.test(e.message)
+        ?'EL² esaurito → voce di sistema'
+        :'EL² non raggiungibile → voce di sistema');
+    }
+  }
+  // ── 3. Voci di sistema ──
   if(ttsEngine!=='system'){ttsEngine='system';updateEngineStatus();showToast('ElevenLabs esaurito → voce di sistema');}
   return fetchSystem(text,elVoiceId);
 }
 
-async function fetchEL(text,voiceId){
+async function fetchEL(text,voiceId,apiKey){
   const res=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,{
     method:'POST',
-    headers:{'xi-api-key':API_KEY_EL,'Content-Type':'application/json','Accept':'audio/mpeg'},
+    headers:{'xi-api-key':apiKey,'Content-Type':'application/json','Accept':'audio/mpeg'},
     body:JSON.stringify({text,model_id:EL_MODEL,voice_settings:{stability:0.5,similarity_boost:0.8,style:0.2,use_speaker_boost:true}})
   });
   if(!res.ok){
