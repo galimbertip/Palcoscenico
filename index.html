@@ -271,6 +271,21 @@ select:focus{outline:none;border-color:var(--gold);}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 .author-footer{text-align:center;padding:12px 0 6px;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:0.78rem;color:var(--muted);letter-spacing:0.07em;user-select:none;}
 .author-footer span{color:rgba(201,168,76,0.5);}
+
+/* Blackout battute */
+.line-block.blackout .line-text{
+  background:rgba(10,6,8,0.95);
+  color:transparent;
+  border-radius:4px;
+  user-select:none;
+  transition:all 0.2s;
+}
+.line-block.blackout.active .line-text{
+  background:rgba(139,26,46,0.15);
+  color:transparent;
+}
+/* Teleprompter — scorrimento fluido su scroll-container */
+.script-container{scroll-behavior:smooth;}
 </style>
 </head>
 <body>
@@ -458,6 +473,58 @@ select:focus{outline:none;border-color:var(--gold);}
           </div>
         </label>
       </div>
+      <div style="margin-top:12px;">
+        <div class="field-label" style="margin-bottom:8px;">Le mie battute nel copione</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="display:flex;align-items:center;gap:10px;padding:9px 13px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;cursor:pointer;">
+            <input type="radio" name="myLineDisplay" value="normal" style="accent-color:var(--gold);">
+            <div>
+              <div style="font-size:0.88rem;color:var(--cream2);">Visibili normalmente</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;padding:9px 13px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;cursor:pointer;">
+            <input type="radio" name="myLineDisplay" value="hidden" style="accent-color:var(--gold);">
+            <div>
+              <div style="font-size:0.88rem;color:var(--cream2);">Non leggere la mia parte</div>
+              <div style="font-size:0.75rem;color:var(--muted);font-style:italic;">Il testo rimane visibile ma non viene letto</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;padding:9px 13px;background:var(--bg3);border:1px solid var(--crimson);border-radius:7px;cursor:pointer;">
+            <input type="radio" name="myLineDisplay" value="blackout" style="accent-color:var(--crimson2);">
+            <div>
+              <div style="font-size:0.88rem;color:var(--cream2);">■ Annerite — testo nascosto</div>
+              <div style="font-size:0.75rem;color:var(--muted);font-style:italic;">Le battute sono oscurate, non leggibili</div>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMPOSTAZIONI LOCALI GENERALI -->
+    <div class="field-group">
+      <div class="section-title">Visualizzazione & display</div>
+      <div class="section-subtitle">💾 Salvato solo su questo dispositivo</div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">📜 Scorrimento automatico</div>
+          <div class="toggle-desc">Il copione scorre come un teleprompter durante la lettura</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="autoScroll" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">🔊 Riproduzione vocale</div>
+          <div class="toggle-desc">Disattiva per leggere senza consumare crediti audio</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="voiceEnabled" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">💡 Schermo sempre attivo</div>
+          <div class="toggle-desc">Impedisce al telefono di bloccarsi durante la recitazione</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="wakeLock" checked><span class="toggle-slider"></span></label>
+      </div>
     </div>
 
     <div class="field-group">
@@ -635,6 +702,11 @@ let roleVoiceId={}, roleFilters={};
 let actionVoiceId=DEFAULT_ACTION_VOICE;
 let descVoiceId=DEFAULT_DESC_VOICE;
 let myChars=[], readActions=true, readDescriptions=true; // myChars = array fino a 5 ruoli
+let autoScroll=true;       // teleprompter
+let voiceEnabled=true;     // riproduzione vocale
+let wakeLockEnabled=true;  // schermo attivo
+let myLineDisplay='normal';// 'normal' | 'hidden' | 'blackout'
+let _wakeLock=null;        // WakeLock handle
 let speechRate=1.0;
 let currentLine=0, isPlaying=false;
 let fileName='Copione';
@@ -712,7 +784,9 @@ function applySlotData(data){
   if(data.descVoiceId) descVoiceId=data.descVoiceId;
   buildCoroQueue();
   populateMyCharSelect();
-  if(document.getElementById('screen-settings').classList.contains('active')) buildRoleVoiceUI();
+  const inSettings=document.getElementById('screen-settings').classList.contains('active')
+                 ||document.getElementById('screen-script-settings').classList.contains('active');
+  if(inSettings) buildRoleVoiceUI();
 }
 
 async function saveSharedData(){
@@ -844,26 +918,40 @@ async function saveDashboardSettings(){
 function goScriptSettings(){
   stopAudio(); isPlaying=false; updatePlayBtn();
   buildRoleVoiceUI(); initSkipLabels();
-  const mode=getMyLineMode();
-  document.querySelectorAll('input[name="myLineMode"]').forEach(r=>{r.checked=(r.value===mode);});
-  // Ripristina toggle
+  // Ricarica da localStorage prima di mostrare i controlli
+  populateMyCharSelect();
+  // Sincronizza tutti i controlli HTML con le variabili JS
+  document.querySelectorAll('input[name="myLineMode"]').forEach(r=>{r.checked=(r.value===getMyLineMode());});
+  document.querySelectorAll('input[name="myLineDisplay"]').forEach(r=>{r.checked=(r.value===myLineDisplay);});
   document.getElementById('readActions').checked=readActions;
   document.getElementById('readDescriptions').checked=readDescriptions;
+  document.getElementById('autoScroll').checked=autoScroll;
+  document.getElementById('voiceEnabled').checked=voiceEnabled;
+  document.getElementById('wakeLock').checked=wakeLockEnabled;
   showScreen('screen-script-settings');
 }
 function saveScriptSettings(){
-  // LOCALE — personaggi e modalità battuta
+  // LOCALE
   updateMyChar();
   const mode=document.querySelector('input[name="myLineMode"]:checked')?.value||'pause';
   localStorage.setItem('myLineMode',mode);
-  // GLOBALE — voci, skip, toggle lettura
+  myLineDisplay=document.querySelector('input[name="myLineDisplay"]:checked')?.value||'normal';
+  localStorage.setItem('myLineDisplay',myLineDisplay);
+  autoScroll=document.getElementById('autoScroll').checked;
+  localStorage.setItem('autoScroll',autoScroll);
+  voiceEnabled=document.getElementById('voiceEnabled').checked;
+  localStorage.setItem('voiceEnabled',voiceEnabled);
+  wakeLockEnabled=document.getElementById('wakeLock').checked;
+  localStorage.setItem('wakeLock',wakeLockEnabled);
+  // GLOBALE
   readActions=document.getElementById('readActions').checked;
   readDescriptions=document.getElementById('readDescriptions').checked;
   actionVoiceId=document.getElementById('actionVoiceSelect')?.value||DEFAULT_ACTION_VOICE;
   descVoiceId=document.getElementById('descVoiceSelect')?.value||DEFAULT_DESC_VOICE;
   localStorage.setItem('readActions',readActions);
   localStorage.setItem('readDescriptions',readDescriptions);
-  saveSharedData(); // salva voci personaggi su Firebase
+  saveSharedData();
+  renderScript(); // ridisegna con eventuali blackout aggiornati
   showToast('✓ Impostazioni salvate');
   setTimeout(()=>showScreen('screen-player'),600);
 }
@@ -892,6 +980,14 @@ function getMyLineMode(){return localStorage.getItem('myLineMode')||'pause';}
 function populateMyCharSelect(){
   const saved=JSON.parse(localStorage.getItem('myChars')||'[]');
   myChars=saved.filter(c=>roles.includes(c));
+  // Carica TUTTE le impostazioni locali da localStorage
+  autoScroll     = localStorage.getItem('autoScroll')    !== 'false';
+  voiceEnabled   = localStorage.getItem('voiceEnabled')  !== 'false';
+  wakeLockEnabled= localStorage.getItem('wakeLock')      !== 'false';
+  myLineDisplay  = localStorage.getItem('myLineDisplay') || 'normal';
+  // readActions/readDescriptions: default true se non ancora salvati
+  if(localStorage.getItem('readActions')   !== null) readActions    = localStorage.getItem('readActions')    !== 'false';
+  if(localStorage.getItem('readDescriptions') !== null) readDescriptions = localStorage.getItem('readDescriptions') !== 'false';
   buildMyCharSelects();
   const mode=getMyLineMode();
   document.querySelectorAll('input[name="myLineMode"]').forEach(r=>{r.checked=(r.value===mode);});
@@ -1201,35 +1297,32 @@ function renderScript(){
   const c=document.getElementById('scriptContainer');
   if(!lines.length){c.innerHTML='<div style="text-align:center;padding:60px;color:var(--muted);font-style:italic;">Nessuna riga trovata.</div>';return;}
   const _myChars=JSON.parse(localStorage.getItem('myChars')||'[]');
-  const _readMyLines=getMyLineMode()==='read';
+  const _display=localStorage.getItem('myLineDisplay')||'normal';
+  const _readMyLines=getMyLineMode()==='read'&&_display!=='hidden'&&_display!=='blackout';
   c.innerHTML=lines.map((line,i)=>{
     const isMe=line.type==='dialogue'&&_myChars.includes(line.speaker);
-    const skipped=isMe&&!_readMyLines;
+    const skipped=isMe&&!_readMyLines&&(_display==='hidden'||_display==='blackout');
+    const isBlackout=isMe&&_display==='blackout';
     let speakerColor=roleColors[line.speaker]||'var(--muted)';
     let blockClass='line-block';
     let textClass='line-text';
     let speakerLabel='';
 
     if(line.type==='action'){
-      blockClass+=' type-action';
-      textClass+=' stage-action';
+      blockClass+=' type-action'; textClass+=' stage-action';
       speakerLabel=line.speaker==='Scena'?'【 Azione 】':'【 '+line.speaker+' — Azione 】';
     } else if(line.type==='description'){
-      blockClass+=' type-description';
-      textClass+=' stage-description';
+      blockClass+=' type-description'; textClass+=' stage-description';
       speakerLabel=line.speaker==='Scena'?'【 Scena 】':'【 '+line.speaker+' — Scena 】';
     } else if(line.type==='coro'){
-      blockClass+=' type-coro';
-      textClass+=' coro-text';
-      speakerLabel='🎭 TUTTI';
-      speakerColor='#b090d8';
+      blockClass+=' type-coro'; textClass+=' coro-text';
+      speakerLabel='🎭 TUTTI'; speakerColor='#b090d8';
     } else {
-      // dialogue
       blockClass+=isMe?' my-line':'';
-      speakerLabel=line.speaker+(skipped?'<span class="skip-badge">saltata</span>':'');
+      blockClass+=isBlackout?' blackout':'';
+      speakerLabel=line.speaker+(skipped&&!isBlackout?'<span class="skip-badge">saltata</span>':'');
     }
-
-    return `<div class="${blockClass} ${skipped?'skipped':''}" id="line-${i}" onclick="jumpToLine(${i})">
+    return `<div class="${blockClass}${skipped?' skipped':''}" id="line-${i}" onclick="jumpToLine(${i})">
       <div class="line-speaker" style="color:${speakerColor}">${speakerLabel}</div>
       <div class="${textClass}">${line.text}</div>
       ${line.type==='coro'?`<div class="coro-voices">letta da ${Math.min(coroVoiceQueue.length,4)} voci in sequenza</div>`:''}
@@ -1241,7 +1334,6 @@ function renderScript(){
 function stopAudio(){if(currentAudio){currentAudio.pause();currentAudio=null;}setBuffering(false);}
 function setBuffering(b){document.getElementById('bufferingRing').classList.toggle('active',b);}
 async function startPlaying(){
-  // Ricarica le key da Firebase ad ogni avvio — così prende subito le key nuove
   try{
     const cfgSnap=await window._getDoc(window._fbDoc('config'));
     if(cfgSnap.exists()){
@@ -1250,48 +1342,55 @@ async function startPlaying(){
     }
   }catch(e){console.warn('Config reload failed',e);}
   elFailed=false; elFailed2=false;
+  requestWakeLock();
   isPlaying=true; updatePlayBtn(); speakLine(currentLine);
 }
 
 async function speakLine(idx){
-  if(idx>=lines.length){isPlaying=false;updatePlayBtn();showToast('Copione terminato 🎭');return;}
+  if(idx>=lines.length){isPlaying=false;updatePlayBtn();releaseWakeLock();showToast('Copione terminato 🎭');return;}
   currentLine=idx; updateActiveBlock(); updateProgress();
   const line=lines[idx];
 
-  // Leggi sempre i valori aggiornati da localStorage
   const _myChars = JSON.parse(localStorage.getItem('myChars')||'[]');
-  const _mode = getMyLineMode(); // 'read' | 'pause' | 'silent'
+  const _mode = getMyLineMode();
+  const _display = localStorage.getItem('myLineDisplay')||'normal';
   const isMe = line.type==='dialogue' && _myChars.includes(line.speaker);
 
   if(line.type==='action'&&!readActions) return speakLine(idx+1);
   if(line.type==='description'&&!readDescriptions) return speakLine(idx+1);
 
+  // Modalità pausa sulla mia battuta
   if(isMe && _mode==='pause'){
-    // Metti in pausa — l'attore recita e poi preme ▶ per continuare
-    isPlaying=false;
-    updatePlayBtn();
+    isPlaying=false; updatePlayBtn();
     document.getElementById('currentSpeakerLabel').textContent='🎤 '+line.speaker;
-    updateActiveBlock();
-    return;
+    updateActiveBlock(); return;
   }
-
+  // Modalità silenziosa sulla mia battuta
   if(isMe && _mode==='silent'){
-    // Leggi in silenzio — salta l'audio ma aspetta la durata stimata del testo
-    const ms=Math.max(1000, line.text.length * 60); // ~60ms per carattere
+    const ms=Math.max(1000, line.text.length*60);
     document.getElementById('currentSpeakerLabel').textContent='🔇 '+line.speaker;
-    await new Promise(r=>setTimeout(r, ms));
-    if(isPlaying) speakLine(idx+1);
-    return;
+    await new Promise(r=>setTimeout(r,ms));
+    if(isPlaying) speakLine(idx+1); return;
+  }
+  // Battuta nascosta/blackout — salta senza audio
+  if(isMe && (_display==='hidden'||_display==='blackout')){
+    const ms=Math.max(800, line.text.length*60);
+    document.getElementById('currentSpeakerLabel').textContent='🔇 '+line.speaker;
+    await new Promise(r=>setTimeout(r,ms));
+    if(isPlaying) speakLine(idx+1); return;
   }
 
-  // Speaker label
   const labels={action:'【 Azione 】',description:'【 Scena 】',coro:'🎭 TUTTI — coro',dialogue:line.speaker};
   document.getElementById('currentSpeakerLabel').textContent=labels[line.type]||line.speaker;
 
-  if(line.type==='coro'){
-    await speakCoro(line.text, idx);
-    return;
+  // Voce disattivata — scorre visivamente con timer proporzionale
+  if(!voiceEnabled){
+    const ms=Math.max(800, line.text.length * Math.max(40, 80/speechRate));
+    await new Promise(r=>setTimeout(r,ms));
+    if(isPlaying) speakLine(idx+1); return;
   }
+
+  if(line.type==='coro'){await speakCoro(line.text,idx);return;}
 
   const voiceId = line.type==='action' ? actionVoiceId
                 : line.type==='description' ? descVoiceId
@@ -1436,7 +1535,7 @@ function fetchSystem(text,elVoiceId){
 /* ══ CONTROLS ══ */
 function togglePlay(){
   if(isPlaying){
-    isPlaying=false; stopAudio(); updatePlayBtn();
+    isPlaying=false; stopAudio(); releaseWakeLock(); updatePlayBtn();
   } else {
     // Ricarica key Firebase in background (non blocca)
     window._getDoc(window._fbDoc('config')).then(s=>{
@@ -1479,10 +1578,9 @@ function stopAndReset(){
   stopAudio();
   isPlaying=false;
   currentLine=0;
-  elFailed=false; elFailed2=false; // reset così riparte da EL¹ al prossimo play
-  updatePlayBtn();
-  updateActiveBlock();
-  updateProgress();
+  elFailed=false; elFailed2=false;
+  releaseWakeLock();
+  updatePlayBtn(); updateActiveBlock(); updateProgress();
   document.getElementById('currentSpeakerLabel').textContent='—';
 }
 function prevLine(){stopAudio();currentLine=Math.max(0,currentLine-1);isPlaying=true;updatePlayBtn();speakLine(currentLine);}
@@ -1496,9 +1594,39 @@ function updatePlayBtn(){
   if(btn) btn.textContent=isPlaying?'⏸':'▶';
 }
 function updateActiveBlock(){
-  document.querySelectorAll('.line-block').forEach((el,i)=>{el.classList.remove('active','past');if(i<currentLine)el.classList.add('past');if(i===currentLine)el.classList.add('active');});
-  document.getElementById('line-'+currentLine)?.scrollIntoView({behavior:'smooth',block:'center'});
+  document.querySelectorAll('.line-block').forEach((el,i)=>{
+    el.classList.remove('active','past');
+    if(i<currentLine) el.classList.add('past');
+    if(i===currentLine) el.classList.add('active');
+  });
+  const activeLine=document.getElementById('line-'+currentLine);
+  if(!activeLine) return;
+  if(autoScroll && isPlaying){
+    // Teleprompter: porta la riga attiva a ~30% dall'alto dello schermo
+    const container=document.getElementById('scriptContainer');
+    const lineTop=activeLine.offsetTop;
+    const offset=container.clientHeight*0.3;
+    container.scrollTo({top:lineTop-offset, behavior:'smooth'});
+  } else {
+    activeLine.scrollIntoView({behavior:'smooth',block:'center'});
+  }
 }
+
+/* ══ WAKE LOCK ══ */
+async function requestWakeLock(){
+  if(!wakeLockEnabled||!('wakeLock' in navigator)) return;
+  try{
+    _wakeLock=await navigator.wakeLock.request('screen');
+    _wakeLock.addEventListener('release',()=>{_wakeLock=null;});
+  }catch(e){console.warn('WakeLock non disponibile',e);}
+}
+function releaseWakeLock(){
+  if(_wakeLock){_wakeLock.release();_wakeLock=null;}
+}
+// Riacquisisce il lock se la pagina torna in primo piano
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&isPlaying) requestWakeLock();
+});
 function updateProgress(){
   document.getElementById('progressFill').style.width=(lines.length>1?(currentLine/(lines.length-1)*100):0)+'%';
 }
