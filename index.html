@@ -269,6 +269,8 @@ select:focus{outline:none;border-color:var(--gold);}
 ::-webkit-scrollbar{width:3px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.author-footer{text-align:center;padding:12px 0 6px;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:0.78rem;color:var(--muted);letter-spacing:0.07em;user-select:none;}
+.author-footer span{color:rgba(201,168,76,0.5);}
 </style>
 </head>
 <body>
@@ -352,6 +354,7 @@ select:focus{outline:none;border-color:var(--gold);}
       <div class="sync-dot loading" id="syncDot"></div>
       <span id="syncLabel">Connessione al database…</span>
     </div>
+    <div class="author-footer">un progetto di <span>Paolo Galimberti</span></div>
   </div>
 </div>
 
@@ -536,6 +539,16 @@ select:focus{outline:none;border-color:var(--gold);}
 
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+/* ┌─────────────────────────────────────────────┐
+   │  Applicazione sviluppata da:                │
+   │  atob('UGFvbG8gR2FsaW1iZXJ0aQ==')          │
+   │  © 2025 – tutti i diritti riservati         │
+   └─────────────────────────────────────────────┘ */
+const _a = atob('UGFvbG8gR2FsaW1iZXJ0aQ=='); // Paolo Galimberti
+const _b = atob('Q25ieWIgVG55dnpvcmVndg==');  // ROT13 variant
+void _a; void _b; // attribution markers — do not remove
+
 
 let API_KEY_EL='';  // key 1 — caricata da Firebase
 let API_KEY_EL2=''; // key 2 — caricata da Firebase (opzionale)
@@ -1155,8 +1168,16 @@ function renderScript(){
 /* ══ PLAYBACK ══ */
 function stopAudio(){if(currentAudio){currentAudio.pause();currentAudio=null;}setBuffering(false);}
 function setBuffering(b){document.getElementById('bufferingRing').classList.toggle('active',b);}
-function startPlaying(){
-  elFailed=false; elFailed2=false; // reset fallback ad ogni nuova sessione
+async function startPlaying(){
+  // Ricarica le key da Firebase ad ogni avvio — così prende subito le key nuove
+  try{
+    const cfgSnap=await window._getDoc(window._fbDoc('config'));
+    if(cfgSnap.exists()){
+      if(cfgSnap.data().elKey)  API_KEY_EL =cfgSnap.data().elKey;
+      if(cfgSnap.data().elKey2) API_KEY_EL2=cfgSnap.data().elKey2;
+    }
+  }catch(e){console.warn('Config reload failed',e);}
+  elFailed=false; elFailed2=false;
   isPlaying=true; updatePlayBtn(); speakLine(currentLine);
 }
 
@@ -1346,6 +1367,13 @@ function togglePlay(){
   if(isPlaying){
     isPlaying=false; stopAudio(); updatePlayBtn();
   } else {
+    // Ricarica key Firebase in background (non blocca)
+    window._getDoc(window._fbDoc('config')).then(s=>{
+      if(s.exists()){
+        if(s.data().elKey)  API_KEY_EL =s.data().elKey;
+        if(s.data().elKey2) API_KEY_EL2=s.data().elKey2;
+      }
+    }).catch(()=>{});
     isPlaying=true; updatePlayBtn();
     const _myChars=JSON.parse(localStorage.getItem('myChars')||'[]');
     const _mode=getMyLineMode();
