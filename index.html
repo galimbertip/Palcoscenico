@@ -267,6 +267,7 @@ select:focus{outline:none;border-color:var(--gold);}
 #toast{position:fixed;bottom:160px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border);color:var(--cream2);padding:9px 18px;border-radius:20px;font-size:0.87rem;font-style:italic;z-index:600;opacity:0;pointer-events:none;transition:opacity 0.3s;white-space:nowrap;max-width:90%;}
 #toast.show{opacity:1;}
 .loading-overlay{position:fixed;inset:0;background:rgba(10,6,8,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:18px;}
+.loading-overlay.hidden{display:none;pointer-events:none;}
 .loading-overlay.hidden{display:none;}
 .loading-spinner{width:44px;height:44px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite;}
 .loading-text{font-style:italic;color:var(--cream2);font-size:0.95rem;}
@@ -770,7 +771,7 @@ function setSyncStatus(state,label){
 }
 
 async function initFirebase(){
-  if(!window._firebaseReady){window.addEventListener('firebase-ready',initFirebase);return;}
+  if(!window._firebaseReady){window.addEventListener('firebase-ready',initFirebase,{once:true});return;}
   fbReady=true;
   setSyncStatus('loading','Caricamento…');
   try{
@@ -847,13 +848,22 @@ async function saveSharedData(){
   }catch(e){showToast('Errore salvataggio: '+e.message);}
 }
 
-window.addEventListener('firebase-ready',initFirebase);
-setTimeout(initFirebase,300);
-// Applica impostazioni locali subito all'avvio
-loadVersion();
-scriptFontSize=parseFloat(localStorage.getItem('scriptFontSize')||'1.0');
-useAiVoice=localStorage.getItem('useAiVoice')!=='false';
-applyFontSize();
+// Se firebase-ready è già scattato prima che registrassimo il listener, chiamiamo subito
+if(window._firebaseReady) initFirebase();
+else window.addEventListener('firebase-ready', initFirebase, {once:true});
+
+// Safety timeout — se dopo 8 secondi l'overlay è ancora visibile, lo rimuoviamo
+setTimeout(()=>{
+  const ov=document.getElementById('loadingOverlay');
+  if(ov && !ov.classList.contains('hidden')){
+    hideLoading();
+    populateMyCharSelect();
+    initSkipLabels();
+    renderSlots();
+    showScreen('screen-home');
+    showToast('⚠ Connessione lenta — alcune funzioni potrebbero non essere disponibili');
+  }
+}, 8000);
 
 /* ══ CORO QUEUE ══ */
 function buildCoroQueue(){
@@ -1690,10 +1700,13 @@ function updateActiveBlock(teleprompter){
   if(!activeLine) return;
   const container=document.getElementById('scriptContainer');
   if(autoScroll && teleprompter){
-    const lineRect=activeLine.getBoundingClientRect();
-    const containerRect=container.getBoundingClientRect();
-    const relativeTop=lineRect.top - containerRect.top + container.scrollTop;
-    container.scrollTo({top: relativeTop - Math.round(container.clientHeight*0.35), behavior:'smooth'});
+    // Aspetta il prossimo frame per avere misure corrette dopo il reflow
+    requestAnimationFrame(()=>{
+      const lineRect=activeLine.getBoundingClientRect();
+      const containerRect=container.getBoundingClientRect();
+      const relativeTop=lineRect.top - containerRect.top + container.scrollTop;
+      container.scrollTo({top: relativeTop - Math.round(container.clientHeight*0.35), behavior:'smooth'});
+    });
   } else {
     activeLine.scrollIntoView({behavior:'smooth', block:'center'});
   }
